@@ -1,0 +1,335 @@
+# Pixel Draw Elements File
+# Place this file in the same directory as main.py
+
+!ELEMENT title
+$BORDER box
+$LOCATION (0,0)
+$DIMENSIONS (70,7)
+
+########################
+
+!ELEMENT matchWindow
+$BORDER box
+$LOCATION (0,6)
+$DIMENSIONS (70,18)
+
+!ELEMENT deck
+$TETHER matchWindow
+$BORDER box
+$LOCATION (2,5)
+$DIMENSIONS (5,11)
+
+!ELEMENT topCard
+$TETHER matchWindow
+$BORDER box
+$LOCATION (29,4)
+$DIMENSIONS (14,12)
+
+!ELEMENT bottomCard
+$TETHER matchWindow
+$BORDER box
+$LOCATION (27,2)
+$DIMENSIONS (14,12)
+
+!ELEMENT p1Tile
+$TETHER matchWindow
+$BORDER box
+$LOCATION (55,1)
+$DIMENSIONS (14,4)
+
+!ELEMENT p2Tile
+$TETHER matchWindow
+$BORDER box
+$LOCATION (55,5)
+$DIMENSIONS (14,4)
+
+!ELEMENT p3Tile
+$TETHER matchWindow
+$BORDER box
+$LOCATION (55,9)
+$DIMENSIONS (14,4)
+
+!ELEMENT p4Tile
+$TETHER matchWindow
+$BORDER box
+$LOCATION (55,13)
+$DIMENSIONS (14,4)
+
+########################
+
+!ELEMENT handWindow
+$BORDER box
+$LOCATION (0,23)
+$DIMENSIONS (70,9)
+
+!ELEMENT previousCard
+$TETHER handWindow
+$GROUP cards
+$BORDER box
+$LOCATION (2,4)
+$DIMENSIONS (4,4)
+
+!ELEMENT card0
+$TETHER handWindow
+$GROUP cards
+$BORDER box
+$LOCATION (7,4)
+$DIMENSIONS (4,4)
+
+!ELEMENT card1
+$TETHER handWindow
+$GROUP cards
+$BORDER box
+$LOCATION (11,4)
+$DIMENSIONS (4,4)
+
+!ELEMENT card2
+$TETHER handWindow
+$GROUP cards
+$BORDER box
+$LOCATION (15,4)
+$DIMENSIONS (4,4)
+
+!ELEMENT card3
+$TETHER handWindow
+$GROUP cards
+$BORDER box
+$LOCATION (19,4)
+$DIMENSIONS (4,4)
+
+!ELEMENT card4
+$TETHER handWindow
+$GROUP cards
+$BORDER box
+$LOCATION (23,4)
+$DIMENSIONS (4,4)
+
+!ELEMENT card5
+$TETHER handWindow
+$GROUP cards
+$BORDER box
+$LOCATION (27,4)
+$DIMENSIONS (4,4)
+
+!ELEMENT card6
+$TETHER handWindow
+$GROUP cards
+$BORDER box
+$LOCATION (31,4)
+$DIMENSIONS (4,4)
+
+!ELEMENT card7
+$TETHER handWindow
+$GROUP cards
+$BORDER box
+$LOCATION (35,4)
+$DIMENSIONS (4,4)
+
+!ELEMENT card8
+$TETHER handWindow
+$GROUP cards
+$BORDER box
+$LOCATION (39,4)
+$DIMENSIONS (4,4)
+
+!ELEMENT card9
+$TETHER handWindow
+$GROUP cards
+$BORDER box
+$LOCATION (43,4)
+$DIMENSIONS (4,4)
+
+!ELEMENT card10
+$TETHER handWindow
+$GROUP cards
+$BORDER box
+$LOCATION (47,4)
+$DIMENSIONS (4,4)
+
+!ELEMENT card11
+$TETHER handWindow
+$GROUP cards
+$BORDER box
+$LOCATION (51,4)
+$DIMENSIONS (4,4)
+
+!ELEMENT card12
+$TETHER handWindow
+$GROUP cards
+$BORDER box
+$LOCATION (55,4)
+$DIMENSIONS (4,4)
+
+!ELEMENT card13
+$TETHER handWindow
+$GROUP cards
+$BORDER box
+$LOCATION (59,4)
+$DIMENSIONS (4,4)
+
+!ELEMENT nextCard
+$TETHER handWindow
+$GROUP cards
+$BORDER box
+$LOCATION (64,4)
+$DIMENSIONS (4,4)
+
+########################
+
+!ELEMENT lobbyWindow
+$BORDER box
+$LOCATION (0,6)
+$DIMENSIONS (70,26)
+
+!ELEMENT player0Stage
+$TETHER lobbyWindow
+$GROUP lobbyTiles
+$BORDER box
+$LOCATION (1,1)
+$DIMENSIONS (34,4)
+
+!ELEMENT player1Stage
+$TETHER lobbyWindow
+$GROUP lobbyTiles
+$BORDER box
+$LOCATION (35,1)
+$DIMENSIONS (34,4)
+
+!ELEMENT player2Stage
+$TETHER lobbyWindow
+$GROUP lobbyTiles
+$BORDER box
+$LOCATION (1,5)
+$DIMENSIONS (34,4)
+
+!ELEMENT player3Stage
+$TETHER lobbyWindow
+$GROUP lobbyTiles
+$BORDER box
+$LOCATION (35,5)
+$DIMENSIONS (34,4)
+
+!ELEMENT buttonStart
+$TETHER lobbyWindow
+$GROUP lobbyButtons
+$BORDER box
+$LOCATION (1,10)
+$DIMENSIONS (34,3)
+
+!ELEMENT buttonAddAI
+$TETHER lobbyWindow
+$GROUP lobbyButtons
+$BORDER box
+$LOCATION (1,13)
+$DIMENSIONS (17,3)
+
+!ELEMENT buttonStop
+$TETHER lobbyWindow
+$GROUP lobbyButtons
+$BORDER box
+$LOCATION (18,13)
+$DIMENSIONS (17,3)
+
+!ELEMENT buttonKick
+$TETHER lobbyWindow
+$GROUP lobbyButtons
+$BORDER box
+$LOCATION (1,16)
+$DIMENSIONS (34,3)
+
+!ELEMENT buttonClose
+$TETHER lobbyWindow
+$GROUP lobbyButtons
+$BORDER box
+$LOCATION (1,19)
+$DIMENSIONS (34,3)
+
+!ELEMENT buttonSettings
+$TETHER lobbyWindow
+$GROUP lobbyButtons
+$BORDER box
+$LOCATION (1,22)
+$DIMENSIONS (34,3)
+
+########################
+
+!ELEMENT settingsWindow
+$BORDER box
+$LOCATION (35,16) #TODO
+$DIMENSIONS (34,15)
+
+!ELEMENT buttonDisplayEffects
+$TETHER settingsWindow
+$GROUP settingsButtons
+$BORDER none
+$LOCATION (1,3)
+$DIMENSIONS (32,1)
+
+!ELEMENT buttonComputerSpeed
+$TETHER settingsWindow
+$GROUP settingsButtons
+$BORDER none
+$LOCATION (1,6)
+$DIMENSIONS (32,1)
+
+!ELEMENT buttonShowHands
+$TETHER settingsWindow
+$GROUP settingsButtons
+$BORDER none
+$LOCATION (1,9)
+$DIMENSIONS (32,1)
+
+!ELEMENT buttonDoesNothing
+$TETHER settingsWindow
+$GROUP settingsButtons
+$BORDER none
+$LOCATION (1,12)
+$DIMENSIONS (32,1)
+
+########################
+
+!ELEMENT controls
+$BORDER none
+$LOCATION (0,32)
+$DIMENSIONS (70,1)
+
+########################
+
+!ELEMENT modeWindow
+$BORDER box
+$LOCATION (17,7)
+$DIMENSIONS (36,21)
+
+!ELEMENT mainStage
+$TETHER modeWindow
+$BORDER box
+$LOCATION (1,1)
+$DIMENSIONS (34,4)
+
+!ELEMENT buttonLocal
+$TETHER modeWindow
+$GROUP modeButtons
+$BORDER box
+$LOCATION (1,8)
+$DIMENSIONS (34,3)
+
+!ELEMENT buttonNetworkHost
+$TETHER modeWindow
+$GROUP modeButtons
+$BORDER box
+$LOCATION (1,11)
+$DIMENSIONS (34,3)
+
+!ELEMENT buttonNetworkJoin
+$TETHER modeWindow
+$GROUP modeButtons
+$BORDER box
+$LOCATION (1,14)
+$DIMENSIONS (34,3)
+
+!ELEMENT buttonExit
+$TETHER modeWindow
+$GROUP modeButtons
+$BORDER box
+$LOCATION (1,17)
+$DIMENSIONS (34,3)
