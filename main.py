@@ -1,6 +1,6 @@
 from curses import wrapper
 import sys
-from ui import UI
+from ui2 import UI
 from player import Player, ComputerPlayer
 #from match import Match
 import curses
@@ -38,13 +38,27 @@ class Game():
         3: [1, 1, 2, 2],
     }
 
+    MV_MAP_SETTINGS = {
+        0: [3, 1, 0, 0],
+        1: [0, 2, 1, 1],
+        2: [1, 3, 2, 2],
+        3: [2, 0, 3, 3],
+    }
+
+    NEXT_SPEED = {
+        'Slow': 'Normal',
+        'Normal': 'Fast',
+        'Fast': 'Slow'
+    }
+
     MESSAGE_FORMAT = "('{}',{})"
 
     def __init__(self, screen, playerName):
         self.screen = screen
         self.screen.box()
         self.screen.refresh()
-        self.ui = UI(screen, 'elements.txt')
+        self.ui = UI(screen)
+
         self.myPlayer = self.createPlayer(playerName, 'human')
         self.gameActive = True
         self.canHost = True
@@ -80,14 +94,16 @@ class Game():
         self.activeButtons = {
             'mode' : [],
             'lobby' : [],
+            'settings' : [],
         }
 
         self.pointers = {
             'lobby' : self.lobbyPointer,
-            'mode' : self.modePointer
+            'mode' : self.modePointer,
+            'settings' : self.settingsPointer
         }
 
-        self.settings = [True, False, 'Normal', False]
+        self.settings = [True, 'Normal', False, False]
 
         _s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         _s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Set Options
@@ -128,6 +144,8 @@ class Game():
             pointer = self.lobbyPointer
         elif directory == 'mode':
             pointer = self.modePointer
+        elif directory == 'settings':
+            pointer = self.settingsPointer
         self.ui.updateButtons(directory, pointer, {'active':self.activeButtons[directory]})
 
     def getComputerName(self):
@@ -167,6 +185,9 @@ class Game():
             self.addPlayer(p)
         elif tup[0] == 'remove':
             self.removePlayer(int(tup[1]))
+        elif tup[0] == 'settings':
+            self.settings = list(tup[1])
+            self.ui.updateSettings(self.settings)
 
     def joinServer(self):
         self.ui.prepareJoinButton('getIP')
@@ -235,7 +256,7 @@ class Game():
             while newPointer not in self.activeButtons['mode']:
                 newPointer = Game.MV_MAP_MODE[newPointer][moveNum]
             self.modePointer = newPointer
-        if directory == 'lobby':
+        elif directory == 'lobby':
             newPointer = Game.MV_MAP_LOBBY[self.lobbyPointer][moveNum]
             if newPointer == 1 and self.searching:
                 newPointer = 2
@@ -244,11 +265,17 @@ class Game():
                 if newPointer == 1 and self.searching:
                     newPointer = 2
             self.lobbyPointer = newPointer
-        if directory == 'stage':
+        elif directory == 'stage':
             newPointer = Game.MV_MAP_STAGE[self.stagePointer][moveNum]
             while newPointer >= self.numPlayers:
                 newPointer = Game.MV_MAP_STAGE[newPointer][moveNum]
             self.stagePointer = newPointer
+        elif directory == 'settings':
+            newPointer = Game.MV_MAP_SETTINGS[self.settingsPointer][moveNum]
+            while newPointer not in self.activeButtons['settings']:
+                newPointer = Game.MV_MAP_SETTINGS[newPointer][moveNum]
+            self.settingsPointer = newPointer
+
 
     def newAI(self):
         p = ComputerPlayer(self.getComputerName())
@@ -307,6 +334,11 @@ class Game():
                     self.searchStop()
                 self.kickPlayer(-1)
                 self.inputDirectory = 'mode'
+            elif self.lobbyPointer == 5:
+                oldSettings = list(self.settings)
+                self.selectSettings()
+                if self.gameMode == 'host' and oldSettings != self.settings:
+                    self.sendMessage('settings')
 
     def removePlayer(self, num, all=False):
         self.lock.acquire()
@@ -378,6 +410,33 @@ class Game():
         else:
             self.titleConsole("Your IP is {}. Press Search to Find Players".format(self.getIP()))
 
+    def selectSettings(self):
+        self.settingsPointer = 0
+        self.updateButtons('settings')
+        while True:
+
+            k = self.ui.getInput()
+
+            if k in Game.MOVEMENT:
+                self.movePointer('settings', k)
+                self.updateButtons('settings')
+
+            elif k == ord(' '):
+                if self.settingsPointer == 0:
+                    self.settings[0] = not self.settings[0]
+                elif self.settingsPointer == 1:
+                    self.settings[1] = Game.NEXT_SPEED[self.settings[1]]
+                elif self.settingsPointer == 2:
+                    self.settings[2] = not self.settings[2]
+                elif self.settingsPointer == 3:
+                    self.settings[3] = not self.settings[3]
+                self.ui.updateSettings(self.settings)
+
+            elif k in (ord('\n'), 27):
+                self.settingsPointer = -1
+                self.updateButtons('settings')
+                break
+
     def selectStage(self):
         self.stagePointer = 0
         self.updateStage(None, self.stagePointer, isSelected=True, customMessage="Cancel")
@@ -400,15 +459,20 @@ class Game():
                 return
 
     def sendMessage(self, messageType, playerNum=None, ignoreSocket=None):
+        self.lock.acquire()
         message = ''
         if messageType == 'add':
             message = Game.MESSAGE_FORMAT.format('add', self.playerStaging[self.numPlayers-1].getString()[:-1])
         elif messageType == 'remove':
             message = Game.MESSAGE_FORMAT.format('remove', playerNum)
+        elif messageType == 'settings':
+            message = Game.MESSAGE_FORMAT.format('settings', "[{},'{}',{},{}]".format(self.settings[0],self.settings[1],
+                                                                                  self.settings[2],self.settings[3]))
         for s in self.hSockets:
             if s is not None and s != ignoreSocket:
                 curses.beep()
                 s.send(message.encode())
+        self.lock.release()
 
     def setActiveButtons(self, directory):
         if directory == 'mode':
@@ -432,6 +496,8 @@ class Game():
                 if self.gameMode != 'join':
                     active.append(5)
             self.activeButtons['lobby'] = list(active)
+        elif directory == 'settings':
+            self.activeButtons['settings'] = [0, 1, 2, 3]
 
     def start(self):
         self.ui.openWindow('title')
@@ -475,6 +541,7 @@ class Game():
                     for info in playersInfo:
                         p = self.createPlayer(info[0], info[2], info[1])
                         self.addPlayer(p)
+
                     #self.addPlayer(self.myPlayer)
                     self.lobbyPointer = 4
 
@@ -555,9 +622,9 @@ class Game():
                         self.sendMessage('remove', playerNum=playerNum)
                     return
             except OSError:
+                curses.flash()
                 self.removePlayer(playerNum)
                 del self.hThreadActive[playerNum]
-                curses.beep()
                 if not self.abortRoom:
                     self.sendMessage('remove', playerNum=playerNum)
                 return
@@ -599,6 +666,8 @@ class Game():
                                   {'name': 'buttonClose', 'start': 11, 'length': 32, 'label': 'Close Room'}]
         elif directory == 'mode':
             pointer = self.modePointer
+        elif directory == 'settings':
+            pointer = self.settingsPointer
         if pointer != -1 and pointer not in data['active']:
             self.movePointer(directory, curses.KEY_DOWN)
         self.ui.updateButtons(directory, pointer, data)
@@ -621,8 +690,10 @@ class Game():
 def main(stdscreen, playerName):
     g = Game(stdscreen, playerName)
     g.start()
+    time.sleep(5)
 
 if __name__ == '__main__':
+    name = ''
     try:
         name = sys.argv[1]
         name = name.replace(' ','')
@@ -635,7 +706,7 @@ if __name__ == '__main__':
         else:
             name = name[0:12]
     except IndexError:
-        print("Error")
+        print("Error, Please Provide a Name")
         exit()
     sys.stdout.write("\x1b[8;33;70t")
     sys.stdout.flush()

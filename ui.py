@@ -514,7 +514,7 @@ class UI:
             self.putText('settingsWindow', 10, 8, 'True', 'green', False)
         else:
             self.putText('settingsWindow', 10, 8, 'False', 'red', False)
-        if settings[2] is True:
+        if settings[3] is True:
             self.putText('settingsWindow', 13, 8, 'True', 'green', True)
         else:
             self.putText('settingsWindow', 13, 8, 'False', 'red', True)
