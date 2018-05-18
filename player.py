@@ -5,7 +5,7 @@ class Player():
     def __init__(self, name, points=0):
         self.name = name
         self.id = -1
-        self.type = 'human'
+        self.human = True
         #self.hand = Hand()
         self.forceDraw = 0
         self.points = points
@@ -74,7 +74,7 @@ class ComputerPlayer(Player):
 
     def __init__(self, name, points=0):
         super().__init__(name, points)
-        self.type = 'computer'
+        self.human = False
         self.colorsInHand = {
             'blue' : 0,
             'red' : 0,

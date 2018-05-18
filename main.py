@@ -1,6 +1,6 @@
 from curses import wrapper
 import sys
-from ui2 import UI
+from ui import UI
 from player import Player, ComputerPlayer
 #from match import Match
 import curses
@@ -57,9 +57,9 @@ class Game():
         self.screen = screen
         self.screen.box()
         self.screen.refresh()
-        self.ui = UI(screen)
+        self.ui = UI(screen, "elements.txt")
 
-        self.myPlayer = self.createPlayer(playerName, 'human')
+        self.myPlayer = self.createPlayer(playerName, True)
         self.gameActive = True
         self.canHost = True
 
@@ -131,8 +131,8 @@ class Game():
                                                         len(self.hSockets)))
         self.updateButtons('lobby')
 
-    def createPlayer(self, name, type, points=0):
-        if type == 'human':
+    def createPlayer(self, name, human, points=0):
+        if human:
             p = Player(name, points)
         else:
             p = ComputerPlayer(name, points)
@@ -675,7 +675,7 @@ class Game():
 
     def updateStage(self, player, stageNum, isSearching=False, isEntering=False, isSelected=False, customMessage=None):
         if player is not None:
-            if player.type == 'human':
+            if player.human:
                 self.ui.updatePlayerStage(stageNum, False, player.name, player.points, isSearching, isEntering, isSelected)
             else:
                 self.ui.updatePlayerStage(stageNum, False, player.name+' AI', player.points, isSearching, isEntering,
@@ -690,7 +690,6 @@ class Game():
 def main(stdscreen, playerName):
     g = Game(stdscreen, playerName)
     g.start()
-    time.sleep(5)
 
 if __name__ == '__main__':
     name = ''

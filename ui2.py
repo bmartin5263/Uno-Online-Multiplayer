@@ -6,7 +6,7 @@ class UI:
     ELEMENT_DEFAULTS = {
         'title': {'border': 'box', 'tether': None, 'color': 'white', 'location': (0, 0), 'dimensions': (70, 7)},
         'windowMode': {'border': 'box', 'tether': None, 'color': 'white', 'location': (17, 7), 'dimensions': (36, 21)},
-        'mainStage': {'border': 'box', 'tether': "windowMode", 'color': 'white', 'location': (1, 1),
+        'mainStage': {'border': 'box', 'tether': "windowMode", 'color': 'blue', 'location': (1, 1),
                       'dimensions': (34, 4)},
         'buttonLocal': {'border': 'box', 'tether': "windowMode", 'color': 'white', 'location': (1, 8),
                         'dimensions': (34, 3)},
@@ -55,6 +55,11 @@ class UI:
         'default' : ('title',),
         'settings' : ('windowSettings', 'buttonDisplayEffects', 'buttonComputerSpeed', 'buttonShowHands',
                       'buttonDoesNothing')
+    }
+
+    BUTTON_GROUPS = {
+        'mode' : ('buttonLocal', 'buttonHost', 'buttonJoin', 'buttonExit'),
+        'lobby' : ('buttonStart', 'buttonAddAI', 'buttonSearch', 'buttonKick', 'buttonClose', 'buttonSettings')
     }
 
     COLORS = ('blue', 'red', 'green', 'yellow')
@@ -106,14 +111,28 @@ class UI:
             self._createElement(e)
 
         self._initializeElements()
-        self._openGroup('default')
-        self._openGroup('lobby')
-        self._openGroup('settings')
-        self._openGroup('mode')
+        self.openGroup('default')
+
+        self.clearStage(0)
+        self.clearStage(1)
+        self.clearStage(2)
+        self.clearStage(3)
+
+        #self.openGroup('lobby')
+        #self.openGroup('settings')
+        #self.openGroup('mode')
+
+    @staticmethod
+    def blank(length):
+        return ' ' * length
+
+    def getInput(self):
+        curses.flushinp()
+        k = self.e['main']['window'].getch()
+        return k
 
     def _createElement(self, element):
         """Creates an element with initial values."""
-        #name = UI.ELEMENT_DEFAULTS[element]['name']
         location = UI.ELEMENT_DEFAULTS[element]['location']
         dimensions = UI.ELEMENT_DEFAULTS[element]['dimensions']
         border = UI.ELEMENT_DEFAULTS[element]['border']
@@ -128,7 +147,7 @@ class UI:
             window.attrset(self.TEXT_COLORS['invert'])
         else:
             window.bkgd(ord(' ') | curses.color_pair(1))
-            window.attrset(self.TEXT_COLORS['white'])
+            window.attrset(self.TEXT_COLORS[color])
         if border == 'box':
             if element == 'title':
                 window.border(curses.ACS_VLINE, curses.ACS_VLINE, curses.ACS_HLINE, curses.ACS_HLINE,
@@ -147,8 +166,15 @@ class UI:
         panel = curses.panel.new_panel(window)
         self.e[element] = {'window': window, 'panel': panel, 'location': location}
 
-    def _colorElement(self, color):
-        """Color an element."""
+    def _colorElement(self, name, color):
+        """Color an element. Does not update"""
+        if color is not None:
+            c = self.TEXT_COLORS[color]
+        else:
+            c = self.TEXT_COLORS[UI.ELEMENT_DEFAULTS[name]['color']]
+        self.e[name]['window'].bkgd(0, c)
+        self.e[name]['window'].attrset(c)
+        self.e[name]['window'].noutrefresh()
 
     def _initializeElements(self):
         """Put initial text and colors to the elements"""
@@ -193,6 +219,17 @@ class UI:
             self._putChar("windowSettings", i, 2, curses.ACS_HLINE, 'white')
         self._putChar("windowSettings", 33, 2, curses.ACS_RTEE, 'white')
 
+        data = {
+            'buttonStart': {'start': 11, 'length': 32, 'label': 'Start Game', 'active': False, 'color': None},
+            'buttonAddAI': {'start': 5, 'length': 15, 'label': 'Add AI', 'active': False, 'color': None},
+            'buttonSearch': {'start': 4, 'length': 15, 'label': 'Search', 'active': False, 'color': None},
+            'buttonKick': {'start': 11, 'length': 32, 'label': 'Kick Player', 'active': False, 'color': None},
+            'buttonClose': {'start': 11, 'length': 32, 'label': 'Close Room', 'active': False, 'color': None},
+            'buttonSettings': {'start': 12, 'length': 32, 'label': 'Settings', 'active': False, 'color': None},
+        }
+
+        self.updateButtons(data)
+
         curses.doupdate()
 
         for element in self.e:
@@ -201,19 +238,30 @@ class UI:
 
         UI._updatePanels()
 
-    def _closeGroup(self, group):
-        for element in UI.GROUPS:
-            self.e[element]['panel'].hide()
-        UI._updatePanels()
+    def _console(self, title, text, warning=False):
+        color = 'yellow'
+        if warning:
+            color = 'red'
+        if title:
+            self._putText('title', 1, 5, UI.blank(68), color)
+            self._putText('title', 1, 5, text, color)
+        else:
+            self._putText('modeWindow', 1, 6, UI.blank(34), color)
+            self._putText('modeWindow', 1, 6, text, color)
+        curses.doupdate()
 
+    def _highlightButton(self, button):
+        """Colors a button yellow."""
+        self._colorElement(button, "yellow")
+        curses.doupdate()
+
+    def _restoreButton(self, button):
+        """Restore the color of a button to its default."""
+        self._colorElement(button, None)
+        curses.doupdate()
 
     def _lowerCard(self, index):
         """Lower Card, Restoring its Border Color"""
-
-    def _openGroup(self, group):
-        for element in UI.GROUPS[group]:
-            self.e[element]['panel'].show()
-        UI._updatePanels()
 
     def _putChar(self, elementName, x, y, character, color=None):
         window = self.e[elementName]['window']
@@ -257,27 +305,48 @@ class UI:
 
     def clearStage(self, num):
         """Clears the stage of any players"""
+        if num < 0:
+            stageName = 'mainStage'
+        else:
+            stageName = "playerStage" + str(num)
+        self._colorElement(stageName, "gray")
+        self._putText(stageName, 1, 1, "No Player", "gray")
+        curses.doupdate()
+
+    def closeGroup(self, group):
+        for element in UI.GROUPS[group]:
+            self.e[element]['panel'].hide()
+        UI._updatePanels()
 
     def console(self, message):
         """Print a yellow message to game's console"""
+        self._console(True, message, False)
 
-    def highlightButton(self, button):
-        """Colors a button yellow."""
+    def modeConsole(self, message):
+        self._console(False, message, False)
 
-    def restoreButton(self, button):
-        """Restore the color of a button to its default."""
+    def modeWarning(self, message):
+        self._console(False, message, True)
+
+    def openGroup(self, group):
+        for element in UI.GROUPS[group]:
+            self.e[element]['panel'].show()
+        UI._updatePanels()
+
+    def resetButtonPointer(self, directory, num):
+        self._restoreButton(UI.BUTTON_GROUPS[directory][num])
 
     def searchStage(self, num):
         """Set stage to for searching."""
+
+    def setButtonPointer(self, directory, num):
+        self._highlightButton(UI.BUTTON_GROUPS[directory][num])
 
     def setCardPointer(self, index):
         """Lower the current card, Raise the card specified by index."""
 
     def setDeckLength(self, num):
         """Sets length of deck to num"""
-
-    def setDirectory(self, directory):
-        """Sets the directory and reveals all of its elements"""
 
     def setHand(self, hand):
         """Sets the current hand in UI memory to the hand provided and draws it."""
@@ -287,12 +356,40 @@ class UI:
 
     def setStageWithPlayer(self, num, player):
         """Add Player Details to Lobby Stage. Use -1 for main stage"""
+        if num < 0:
+            stageName = 'mainStage'
+        else:
+            stageName = "playerStage" + str(num)
+        self._colorElement(stageName, None)
+        self._putText(stageName, 1, 1, UI.blank(32))
+        self._putText(stageName, 1, 1, player.name)
+        self._putText(stageName, 1, 2, UI.blank(32))
+        self._putText(stageName, 1, 2, 'Points: {}'.format(str(player.points)))
+        curses.doupdate()
+
 
     def updateButtons(self, data):
         """Updates buttons based on data (text, color, etc)"""
+        for buttonName in data:
+            innerData = data[buttonName]
+            start = innerData['start']
+            label = innerData['label']
+            length = innerData['length']
+            active = innerData['active']
+            color = innerData['color']
+            if not active:
+                color = 'gray'
+            else:
+                if color is None:
+                    color = UI.ELEMENT_DEFAULTS[buttonName]['color']
+            self._colorElement(buttonName, color)
+            self._putText(buttonName, 1, 1, ' ' * int(length), color)
+            self._putText(buttonName, start + 1, 1, label, color)
+        curses.doupdate()
 
     def warning(self, message):
         """Print a red message to the game's console"""
+        self._console(True, message, True)
 
 if __name__ == '__main__':
     pass
