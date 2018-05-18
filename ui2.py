@@ -59,7 +59,8 @@ class UI:
 
     BUTTON_GROUPS = {
         'mode' : ('buttonLocal', 'buttonHost', 'buttonJoin', 'buttonExit'),
-        'lobby' : ('buttonStart', 'buttonAddAI', 'buttonSearch', 'buttonKick', 'buttonClose', 'buttonSettings')
+        'lobby' : ('buttonStart', 'buttonAddAI', 'buttonSearch', 'buttonKick', 'buttonClose', 'buttonSettings'),
+        'settings' : ('buttonDisplayEffects', 'buttonComputerSpeed', 'buttonShowHands', 'buttonDoesNothing')
     }
 
     COLORS = ('blue', 'red', 'green', 'yellow')
@@ -228,7 +229,16 @@ class UI:
             'buttonSettings': {'start': 12, 'length': 32, 'label': 'Settings', 'active': False, 'color': None},
         }
 
+        sdata = {
+            'buttonDisplayEffects' : {'start':0, 'length': 32, 'label': '- Display Effects', 'active': False, 'color': None},
+            'buttonComputerSpeed' : {'start': 0, 'length': 32, 'label': '- Computer Speed', 'active': False, 'color': None},
+            'buttonShowHands' : {'start': 0, 'length': 32, 'label': '- Show Computer Hands', 'active': False, 'color': None},
+            'buttonDoesNothing' : {'start': 0, 'length': 32, 'label': '- Does Nothing', 'active': False, 'color': None},
+        }
+
         self.updateButtons(data)
+        self.updateSettingButtons(sdata)
+        self.updateSettings([True, 'Normal', False, False])
 
         curses.doupdate()
 
@@ -250,9 +260,9 @@ class UI:
             self._putText('modeWindow', 1, 6, text, color)
         curses.doupdate()
 
-    def _highlightButton(self, button):
+    def _highlightButton(self, button, color):
         """Colors a button yellow."""
-        self._colorElement(button, "yellow")
+        self._colorElement(button, color)
         curses.doupdate()
 
     def _restoreButton(self, button):
@@ -302,6 +312,10 @@ class UI:
 
     def cancelStage(self):
         """Set text of stage 0 to 'cancel' for use in kicking players"""
+        self._putText('playerStage0', 1, 1, UI.blank(32))
+        self._putText('playerStage0', 1, 2, UI.blank(32))
+        self._putText('playerStage0', 1, 1, "Cancel")
+        curses.doupdate()
 
     def clearStage(self, num):
         """Clears the stage of any players"""
@@ -310,6 +324,8 @@ class UI:
         else:
             stageName = "playerStage" + str(num)
         self._colorElement(stageName, "gray")
+        self._putText(stageName, 1, 1, UI.blank(32))
+        self._putText(stageName, 1, 2, UI.blank(32))
         self._putText(stageName, 1, 1, "No Player", "gray")
         curses.doupdate()
 
@@ -340,7 +356,10 @@ class UI:
         """Set stage to for searching."""
 
     def setButtonPointer(self, directory, num):
-        self._highlightButton(UI.BUTTON_GROUPS[directory][num])
+        color = 'yellow'
+        if directory == 'settings':
+            color = 'blue'
+        self._highlightButton(UI.BUTTON_GROUPS[directory][num], color)
 
     def setCardPointer(self, index):
         """Lower the current card, Raise the card specified by index."""
@@ -353,6 +372,22 @@ class UI:
 
     def showHand(self, offset):
         """Show the hand at the offset provided"""
+
+    def pressSettings(self):
+        self._highlightButton("buttonSettings", "green")
+
+    def restoreSettings(self):
+        self._highlightButton("buttonSettings", "yellow")
+
+    def setStagePointer(self, num):
+        """Highlight a stage white."""
+        self._colorElement("playerStage"+str(num), "white")
+        curses.doupdate()
+
+    def restoreStagePointer(self, num):
+        """Return stage to original color"""
+        self._colorElement("playerStage" + str(num), None)
+        curses.doupdate()
 
     def setStageWithPlayer(self, num, player):
         """Add Player Details to Lobby Stage. Use -1 for main stage"""
@@ -385,6 +420,45 @@ class UI:
             self._colorElement(buttonName, color)
             self._putText(buttonName, 1, 1, ' ' * int(length), color)
             self._putText(buttonName, start + 1, 1, label, color)
+        curses.doupdate()
+
+    def updateSettingButtons(self, data):
+        for buttonName in data:
+            innerData = data[buttonName]
+            start = innerData['start']
+            label = innerData['label']
+            length = innerData['length']
+            color = "white"
+            self._colorElement(buttonName, color)
+            self._putText(buttonName, 0, 0, ' ' * int(length), color)
+            self._putText(buttonName, start + 1, 0, label, color)
+        curses.doupdate()
+
+    def updateSettings(self, settings):
+        # [displayEffects(True,False), computerSpeed(Slow, Normal, Fast), showComputerHands(True, False), Does Nothing
+        self._putText('windowSettings', 8, 4, UI.blank(25), None)
+        self._putText('windowSettings', 8, 7, UI.blank(25), None)
+        self._putText('windowSettings', 8, 10, UI.blank(25), None)
+        self._putText('windowSettings', 8, 13, UI.blank(25), None)
+
+        if settings[0] is True:
+            self._putText('windowSettings', 8, 4, 'True', 'green')
+        else:
+            self._putText('windowSettings', 8, 4, 'False', 'red')
+        if settings[1] == 'Slow':
+            self._putText('windowSettings', 8, 7, 'Slow', 'red')
+        elif settings[1] == 'Normal':
+            self._putText('windowSettings', 8, 7, 'Normal', 'yellow')
+        elif settings[1] == 'Fast':
+            self._putText('windowSettings', 8, 7, 'Fast', 'green')
+        if settings[2] is True:
+            self._putText('windowSettings', 8, 10, 'True', 'green')
+        else:
+            self._putText('windowSettings', 8, 10, 'False', 'red')
+        if settings[3] is True:
+            self._putText('windowSettings', 8, 13, 'True', 'green')
+        else:
+            self._putText('windowSettings', 8, 13, 'False', 'red')
         curses.doupdate()
 
     def warning(self, message):

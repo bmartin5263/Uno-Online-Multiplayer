@@ -27,7 +27,25 @@ class Game:
             3: [1, 4, 3, 3],
             4: [3, 5, 4, 4],
             5: [4, 0, 5, 5],
+        },
+        'stage' : {
+            0: [2, 2, 1, 1],
+            1: [3, 3, 0, 0],
+            2: [0, 0, 3, 3],
+            3: [1, 1, 2, 2],
+        },
+        'settings' : {
+            0: [3, 1, 0, 0],
+            1: [0, 2, 1, 1],
+            2: [1, 3, 2, 2],
+            3: [2, 0, 3, 3],
         }
+    }
+
+    NEXT_SPEED = {
+        'Slow': 'Normal',
+        'Normal': 'Fast',
+        'Fast': 'Slow'
     }
 
 
@@ -141,9 +159,14 @@ class Game:
     def beginHost(self):
         self.addPlayer(self.myPlayer)
 
+    def cleanLobby(self):
+        for i in range(self.numPlayers):
+            self.removePlayer(0)
+
     def enterLobby(self):
         self.ui.openGroup('lobby')
         self.ui.openGroup('settings')
+        self.ui.updateSettings(self.settings)
 
         if self.local:
             self.beginLocal()
@@ -165,7 +188,7 @@ class Game:
                 self.updateButtons('lobby')
                 self.setPointer('lobby', self.pointer, None)
 
-        #self.setPointer('lobby', None, pointer)
+        self.cleanLobby()
         self.updateButtons('lobby')
         self.ui.closeGroup('lobby')
         self.ui.closeGroup('settings')
@@ -193,6 +216,62 @@ class Game:
         self.ui.closeGroup('mode')
         self.ui.closeGroup('settings')
         self.ui.closeGroup('lobby')
+
+    def enterSettings(self):
+        self.ui.pressSettings()
+
+        settings = list(self.settings)
+        pointer = 0
+        self.ui.setButtonPointer('settings', pointer)
+        while True:
+
+            k = self.ui.getInput()
+
+            if k in Game.MOVEMENT:
+                self.ui.resetButtonPointer('settings', pointer)
+                pointer = self.moveSettingsPointer(k, pointer)
+                self.ui.setButtonPointer('settings', pointer)
+
+            elif k == ord(' '):
+                if pointer == 0:
+                    settings[0] = not settings[0]
+                elif pointer == 1:
+                    settings[1] = Game.NEXT_SPEED[settings[1]]
+                elif pointer == 2:
+                    settings[2] = not settings[2]
+                elif pointer == 3:
+                    settings[3] = not settings[3]
+                self.ui.updateSettings(settings)
+
+            elif k in (ord('\n'), 27):
+                break
+
+        self.ui.resetButtonPointer('settings', pointer)
+        self.ui.restoreSettings()
+        return settings
+
+
+    def enterStage(self):
+        self.ui.cancelStage()
+
+        pointer = 0
+        self.ui.setStagePointer(pointer)
+
+        while True:
+
+            k = self.ui.getInput()
+
+            if k in Game.MOVEMENT:
+                newPointer = self.moveStagePointer(k, pointer)
+                if newPointer != pointer:
+                    self.ui.restoreStagePointer(pointer)
+                    self.ui.setStagePointer(newPointer)
+                    pointer = newPointer
+            if k in Game.SELECT:
+                break
+
+        self.ui.setStageWithPlayer(0, self.myPlayer)
+        return pointer
 
     def getDefaultPointer(self, directory):
         if directory == 'mode':
@@ -229,6 +308,18 @@ class Game:
                     newPointer = 1
             return newPointer
 
+    def moveStagePointer(self, movement, pointer):
+        moveNum = Game.MOVEMENT.index(movement)
+        moveMap = Game.MOVEMENT_MAPS['stage']
+        newPointer = moveMap[pointer][moveNum]
+        return newPointer
+
+    def moveSettingsPointer(self, movement, pointer):
+        moveNum = Game.MOVEMENT.index(movement)
+        moveMap = Game.MOVEMENT_MAPS['settings']
+        newPointer = moveMap[pointer][moveNum]
+        return newPointer
+
     def pressButton(self, directory):
         if directory == 'mode':
             if self.pointer == 0:                # Local
@@ -254,15 +345,30 @@ class Game:
                     if self.numPlayers == 4:
                         self.pointer = self.movePointer('lobby', curses.KEY_DOWN)
             elif self.pointer == 2:              # Search
-                pass
+                self.searching = not self.searching
             elif self.pointer == 3:              # Kick
-                pass
+                if self.numPlayers > 1:
+                    num = self.enterStage()
+                    if num != 0:
+                        self.removePlayer(num)
+                        if self.numPlayers == 1:
+                            self.pointer = self.movePointer('lobby', curses.KEY_UP)
             elif self.pointer == 4:              # Leave
                 self.directory = 'mode'
                 self.local = False
                 self.hosting = False
             elif self.pointer == 5:              # Settings
-                pass
+                settings = self.enterSettings()
+                if settings != self.settings:
+                    self.settings = settings
+
+    def removePlayer(self, playerNum):
+        del self.playerStaging[playerNum]
+        for i, player in enumerate(self.playerStaging):
+            self.ui.setStageWithPlayer(i, player)
+        self.numPlayers -= 1
+        self.ui.clearStage(self.numPlayers)
+        self.updateButtons('lobby')
 
     def setPointer(self, directory, pointer, old):
         if old is not None:
@@ -292,7 +398,7 @@ class Game:
         elif directory == 'lobby':
             canStart = self.directory == 'lobby' and (self.local or self.hosting) and self.numPlayers > 1
             canSearch = self.directory == 'lobby' and (self.hosting and self.numPlayers < 4)
-            canAddAI = self.directory == 'lobby' and ((self.local and self.numPlayers < 4) or (self.hosting and self.numPlayers < 4))
+            canAddAI = self.directory == 'lobby' and not self.searching and ((self.local and self.numPlayers < 4) or (self.hosting and self.numPlayers < 4))
             canKick = self.directory == 'lobby' and ((self.local and self.numPlayers > 1) or (self.hosting and self.numPlayers > 1))
             canSettings = self.directory == 'lobby' and (self.local or self.hosting)
             canLeave = self.directory == 'lobby'
@@ -304,6 +410,9 @@ class Game:
                 'buttonClose': {'start': 11, 'length': 32, 'label': 'Close Room', 'active' : canLeave, 'color':None},
                 'buttonSettings': {'start': 12, 'length': 32, 'label': 'Settings', 'active' : canSettings, 'color':None},
             }
+            if self.searching:
+                data['buttonSearch']['label'] = "Stop Search"
+                data['buttonSearch']['start'] = 2
         self.ui.updateButtons(data)
         self.active = []
         for button in UI.BUTTON_GROUPS[directory]:
