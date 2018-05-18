@@ -37,50 +37,60 @@ class Groups(Enum):
     DEFAULT = 4
     STAGE = 5
 
+class Colors(Enum):
+    BLUE = 0
+    RED = 1
+    GREEN = 2
+    YELLOW = 3
+    WHITE = 4
+    GRAY = 5
+    INVERT = 6
+    DEEP_RED = 7
+
 class UI:
 
     ELEMENT_DEFAULTS = {
-        Elements.TITLE : {'border': 'box', 'tether': None, 'color': 'white', 'location': (0, 0), 'dimensions': (70, 7)},
-        Elements.WINDOW_MODE: {'border': 'box', 'tether': None, 'color': 'white', 'location': (17, 7), 'dimensions': (36, 21)},
-        Elements.MAIN_STAGE: {'border': 'box', 'tether': Elements.WINDOW_MODE, 'color': 'blue', 'location': (1, 1),
+        Elements.TITLE : {'border': 'box', 'tether': None, 'color': Colors.WHITE, 'location': (0, 0), 'dimensions': (70, 7)},
+        Elements.WINDOW_MODE: {'border': 'box', 'tether': None, 'color': Colors.WHITE, 'location': (17, 7), 'dimensions': (36, 21)},
+        Elements.MAIN_STAGE: {'border': 'box', 'tether': Elements.WINDOW_MODE, 'color': Colors.BLUE, 'location': (1, 1),
                       'dimensions': (34, 4)},
-        Elements.BUTTON_LOCAL: {'border': 'box', 'tether': Elements.WINDOW_MODE, 'color': 'white', 'location': (1, 8),
+        Elements.BUTTON_LOCAL: {'border': 'box', 'tether': Elements.WINDOW_MODE, 'color': Colors.WHITE, 'location': (1, 8),
                         'dimensions': (34, 3)},
-        Elements.BUTTON_HOST: {'border': 'box', 'tether': Elements.WINDOW_MODE, 'color': 'white', 'location': (1, 11),
+        Elements.BUTTON_HOST: {'border': 'box', 'tether': Elements.WINDOW_MODE, 'color': Colors.WHITE, 'location': (1, 11),
                        'dimensions': (34, 3)},
-        Elements.BUTTON_JOIN: {'border': 'box', 'tether': Elements.WINDOW_MODE, 'color': 'white', 'location': (1, 14),
+        Elements.BUTTON_JOIN: {'border': 'box', 'tether': Elements.WINDOW_MODE, 'color': Colors.WHITE, 'location': (1, 14),
                        'dimensions': (34, 3)},
-        Elements.BUTTON_EXIT: {'border': 'box', 'tether': Elements.WINDOW_MODE, 'color': 'white', 'location': (1, 17),
+        Elements.BUTTON_EXIT: {'border': 'box', 'tether': Elements.WINDOW_MODE, 'color': Colors.WHITE, 'location': (1, 17),
                        'dimensions': (34, 3)},
-        Elements.WINDOW_LOBBY: {'border': 'box', 'tether': None, 'color': 'white', 'location': (0, 6), 'dimensions': (70, 26)},
-        Elements.PLAYER_STAGE_0: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'blue', 'location': (1, 1),
+        Elements.WINDOW_LOBBY: {'border': 'box', 'tether': None, 'color': Colors.WHITE, 'location': (0, 6), 'dimensions': (70, 26)},
+        Elements.PLAYER_STAGE_0: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': Colors.BLUE, 'location': (1, 1),
                          'dimensions': (34, 4)},
-        Elements.PLAYER_STAGE_1: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'red', 'location': (35, 1),
+        Elements.PLAYER_STAGE_1: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': Colors.RED, 'location': (35, 1),
                          'dimensions': (34, 4)},
-        Elements.PLAYER_STAGE_2: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'green', 'location': (1, 5),
+        Elements.PLAYER_STAGE_2: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': Colors.GREEN, 'location': (1, 5),
                          'dimensions': (34, 4)},
-        Elements.PLAYER_STAGE_3: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'yellow', 'location': (35, 5),
+        Elements.PLAYER_STAGE_3: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': Colors.YELLOW, 'location': (35, 5),
                          'dimensions': (34, 4)},
-        Elements.BUTTON_START: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'blue', 'location': (1, 10),
+        Elements.BUTTON_START: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': Colors.BLUE, 'location': (1, 10),
                          'dimensions': (34, 3)},
-        Elements.BUTTON_ADD_AI: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'white', 'location': (1, 13),
+        Elements.BUTTON_ADD_AI: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': Colors.WHITE, 'location': (1, 13),
                          'dimensions': (17, 3)},
-        Elements.BUTTON_SEARCH: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'white', 'location': (18, 13),
+        Elements.BUTTON_SEARCH: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': Colors.WHITE, 'location': (18, 13),
                         'dimensions': (17, 3)},
-        Elements.BUTTON_KICK: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'white', 'location': (1, 16),
+        Elements.BUTTON_KICK: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': Colors.WHITE, 'location': (1, 16),
                         'dimensions': (34, 3)},
-        Elements.BUTTON_CLOSE: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'white', 'location': (1, 19),
+        Elements.BUTTON_CLOSE: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': Colors.WHITE, 'location': (1, 19),
                        'dimensions': (34, 3)},
-        Elements.BUTTON_SETTINGS: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'white', 'location': (1, 22),
+        Elements.BUTTON_SETTINGS: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': Colors.WHITE, 'location': (1, 22),
                        'dimensions': (34, 3)},
-        Elements.WINDOW_SETTINGS: {'border': 'box', 'tether': None, 'color': 'white', 'location': (35, 16), 'dimensions': (34, 15)},
-        Elements.BUTTON_DISPLAY_EFFECTS: {'border': None, 'tether': Elements.WINDOW_SETTINGS, 'color': 'white', 'location': (1, 3),
+        Elements.WINDOW_SETTINGS: {'border': 'box', 'tether': None, 'color': Colors.WHITE, 'location': (35, 16), 'dimensions': (34, 15)},
+        Elements.BUTTON_DISPLAY_EFFECTS: {'border': None, 'tether': Elements.WINDOW_SETTINGS, 'color': Colors.WHITE, 'location': (1, 3),
                            'dimensions': (32, 1)},
-        Elements.BUTTON_COMPUTER_SPEED: {'border': None, 'tether': Elements.WINDOW_SETTINGS, 'color': 'white', 'location': (1, 6),
+        Elements.BUTTON_COMPUTER_SPEED: {'border': None, 'tether': Elements.WINDOW_SETTINGS, 'color': Colors.WHITE, 'location': (1, 6),
                                  'dimensions': (32, 1)},
-        Elements.BUTTON_SHOW_HANDS: {'border': None, 'tether': Elements.WINDOW_SETTINGS, 'color': 'white', 'location': (1, 9),
+        Elements.BUTTON_SHOW_HANDS: {'border': None, 'tether': Elements.WINDOW_SETTINGS, 'color': Colors.WHITE, 'location': (1, 9),
                                  'dimensions': (32, 1)},
-        Elements.BUTTON_DOES_NOTHING: {'border': None, 'tether': Elements.WINDOW_SETTINGS, 'color': 'white', 'location': (1, 12),
+        Elements.BUTTON_DOES_NOTHING: {'border': None, 'tether': Elements.WINDOW_SETTINGS, 'color': Colors.WHITE, 'location': (1, 12),
                                  'dimensions': (32, 1)},
     }
 
@@ -99,7 +109,7 @@ class UI:
         Groups.SETTINGS : (Elements.BUTTON_DISPLAY_EFFECTS, Elements.BUTTON_COMPUTER_SPEED, Elements.BUTTON_SHOW_HANDS, Elements.BUTTON_DOES_NOTHING)
     }
 
-    COLORS = ('blue', 'red', 'green', 'yellow')
+    COLORS = (Colors.BLUE, Colors.RED, Colors.GREEN, Colors.YELLOW)
     TWIRL = ('|', '/', '-', '\\')
     STAGES = (Elements.PLAYER_STAGE_0, Elements.PLAYER_STAGE_1, Elements.PLAYER_STAGE_2, Elements.PLAYER_STAGE_3)
 
@@ -128,21 +138,21 @@ class UI:
         curses.init_pair(12, 9, curses.COLOR_BLACK) # deep red
 
         self.TEXT_COLORS = {
-            'white': curses.color_pair(1),
-            'blue': curses.color_pair(2),
-            'red': curses.color_pair(3),
-            'green': curses.color_pair(4),
-            'yellow': curses.color_pair(5),
-            'invert': curses.color_pair(6),
-            'gray': curses.color_pair(11),
-            'deepRed': curses.color_pair(12)
+            Colors.WHITE: curses.color_pair(1),
+            Colors.BLUE: curses.color_pair(2),
+            Colors.RED: curses.color_pair(3),
+            Colors.GREEN: curses.color_pair(4),
+            Colors.YELLOW: curses.color_pair(5),
+            Colors.INVERT: curses.color_pair(6),
+            Colors.GRAY: curses.color_pair(11),
+            Colors.DEEP_RED: curses.color_pair(12)
         }
 
         self.BACK_COLORS = {
-            'blue': curses.color_pair(7),
-            'red': curses.color_pair(8),
-            'green': curses.color_pair(9),
-            'yellow': curses.color_pair(10),
+            Colors.BLUE: curses.color_pair(7),
+            Colors.RED: curses.color_pair(8),
+            Colors.GREEN: curses.color_pair(9),
+            Colors.YELLOW: curses.color_pair(10),
         }
 
         for e in UI.ELEMENT_DEFAULTS:
@@ -182,7 +192,7 @@ class UI:
         window = curses.newwin(dimensions[1], dimensions[0], location[1], location[0])
         if element == 'controls':
             window.bkgd(ord(' ') | curses.color_pair(6))
-            window.attrset(self.TEXT_COLORS['invert'])
+            window.attrset(self.TEXT_COLORS[Colors.INVERT])
         else:
             window.bkgd(ord(' ') | curses.color_pair(1))
             window.attrset(self.TEXT_COLORS[color])
@@ -216,46 +226,46 @@ class UI:
 
     def _initializeElements(self):
         """Put initial text and colors to the elements"""
-        self._putText(Elements.TITLE, 25, 1, "|| ||", 'blue')
-        self._putText(Elements.TITLE, 31, 1, "||\\ ||", 'green')
-        self._putText(Elements.TITLE, 39, 1, "// \\\\", 'red')
-        self._putText(Elements.TITLE, 25, 2, "|| ||", 'blue')
-        self._putText(Elements.TITLE, 31, 2, "||\\\\||", 'green')
-        self._putText(Elements.TITLE, 38, 2, "((   ))", 'red')
-        self._putText(Elements.TITLE, 25, 3, "\\\\ //", 'blue')
-        self._putText(Elements.TITLE, 31, 3, "|| \\||", 'green')
-        self._putText(Elements.TITLE, 39, 3, "\\\\ //", 'red')
-        self._putChar(Elements.TITLE, 0, 4, curses.ACS_LTEE, 'white')
+        self._putText(Elements.TITLE, 25, 1, "|| ||", Colors.BLUE)
+        self._putText(Elements.TITLE, 31, 1, "||\\ ||", Colors.GREEN)
+        self._putText(Elements.TITLE, 39, 1, "// \\\\", Colors.RED)
+        self._putText(Elements.TITLE, 25, 2, "|| ||", Colors.BLUE)
+        self._putText(Elements.TITLE, 31, 2, "||\\\\||", Colors.GREEN)
+        self._putText(Elements.TITLE, 38, 2, "((   ))", Colors.RED)
+        self._putText(Elements.TITLE, 25, 3, "\\\\ //", Colors.BLUE)
+        self._putText(Elements.TITLE, 31, 3, "|| \\||", Colors.GREEN)
+        self._putText(Elements.TITLE, 39, 3, "\\\\ //", Colors.RED)
+        self._putChar(Elements.TITLE, 0, 4, curses.ACS_LTEE, Colors.WHITE)
 
         for i in range(1, 69):
-            self._putChar(Elements.TITLE, i, 4, curses.ACS_HLINE, 'white')
-        self._putChar(Elements.TITLE, 69, 4, curses.ACS_RTEE, 'white')
+            self._putChar(Elements.TITLE, i, 4, curses.ACS_HLINE, Colors.WHITE)
+        self._putChar(Elements.TITLE, 69, 4, curses.ACS_RTEE, Colors.WHITE)
 
-        self._putChar(Elements.WINDOW_LOBBY, 0, 9, curses.ACS_LTEE, 'white')
+        self._putChar(Elements.WINDOW_LOBBY, 0, 9, curses.ACS_LTEE, Colors.WHITE)
         for i in range(1, 69):
-            self._putChar(Elements.WINDOW_LOBBY, i, 9, curses.ACS_HLINE, 'white')
-        self._putChar(Elements.WINDOW_LOBBY, 69, 9, curses.ACS_RTEE, 'white')
+            self._putChar(Elements.WINDOW_LOBBY, i, 9, curses.ACS_HLINE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_LOBBY, 69, 9, curses.ACS_RTEE, Colors.WHITE)
 
         """
-        self.putChar('handWindow', 0, 2, curses.ACS_LTEE, 'white', False)
+        self.putChar('handWindow', 0, 2, curses.ACS_LTEE, Colors.WHITE, False)
         for i in range(1, 69):
-            self.putChar('handWindow', i, 2, curses.ACS_HLINE, 'white', False)
-        self.putChar('handWindow', 69, 2, curses.ACS_RTEE, 'white', True)
+            self.putChar('handWindow', i, 2, curses.ACS_HLINE, Colors.WHITE, False)
+        self.putChar('handWindow', 69, 2, curses.ACS_RTEE, Colors.WHITE, True)
         """
 
-        self._putChar(Elements.WINDOW_MODE, 0, 5, curses.ACS_LTEE, 'white')
-        self._putChar(Elements.WINDOW_MODE, 0, 7, curses.ACS_LTEE, 'white')
+        self._putChar(Elements.WINDOW_MODE, 0, 5, curses.ACS_LTEE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_MODE, 0, 7, curses.ACS_LTEE, Colors.WHITE)
         for i in range(1, 35):
-            self._putChar(Elements.WINDOW_MODE, i, 5, curses.ACS_HLINE, 'white')
-            self._putChar(Elements.WINDOW_MODE, i, 7, curses.ACS_HLINE, 'white')
-        self._putChar(Elements.WINDOW_MODE, 35, 5, curses.ACS_RTEE, 'white')
-        self._putChar(Elements.WINDOW_MODE, 0, 7, curses.ACS_LTEE, 'white')
+            self._putChar(Elements.WINDOW_MODE, i, 5, curses.ACS_HLINE, Colors.WHITE)
+            self._putChar(Elements.WINDOW_MODE, i, 7, curses.ACS_HLINE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_MODE, 35, 5, curses.ACS_RTEE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_MODE, 0, 7, curses.ACS_LTEE, Colors.WHITE)
 
-        self._putText(Elements.WINDOW_SETTINGS, 13, 1, "Settings", 'white')
-        self._putChar(Elements.WINDOW_SETTINGS, 0, 2, curses.ACS_LTEE, 'white')
+        self._putText(Elements.WINDOW_SETTINGS, 13, 1, "Settings", Colors.WHITE)
+        self._putChar(Elements.WINDOW_SETTINGS, 0, 2, curses.ACS_LTEE, Colors.WHITE)
         for i in range(1, 33):
-            self._putChar(Elements.WINDOW_SETTINGS, i, 2, curses.ACS_HLINE, 'white')
-        self._putChar(Elements.WINDOW_SETTINGS, 33, 2, curses.ACS_RTEE, 'white')
+            self._putChar(Elements.WINDOW_SETTINGS, i, 2, curses.ACS_HLINE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_SETTINGS, 33, 2, curses.ACS_RTEE, Colors.WHITE)
 
         data = {
             Elements.BUTTON_START: {'start': 11, 'length': 32, 'label': 'Start Game', 'active': False, 'color': None},
@@ -286,9 +296,9 @@ class UI:
         UI._updatePanels()
 
     def _console(self, title, text, warning=False):
-        color = 'yellow'
+        color = Colors.YELLOW
         if warning:
-            color = 'red'
+            color = Colors.RED
         if title:
             self._putText(Elements.TITLE, 1, 5, UI.blank(68), color)
             self._putText(Elements.TITLE, 1, 5, text, color)
@@ -360,10 +370,10 @@ class UI:
             stage = Elements.MAIN_STAGE
         else:
             stage = UI.STAGES[num]
-        self._colorElement(stage, "gray")
+        self._colorElement(stage, Colors.GRAY)
         self._putText(stage, 1, 1, UI.blank(32))
         self._putText(stage, 1, 2, UI.blank(32))
-        self._putText(stage, 1, 1, "No Player", "gray")
+        self._putText(stage, 1, 1, "No Player", Colors.GRAY)
         curses.doupdate()
 
     def closeGroup(self, group):
@@ -394,12 +404,12 @@ class UI:
         stageName = UI.STAGES[num]
         self._putText(stageName, 1, 1, UI.blank(32))
         self._putText(stageName, 1, 2, UI.blank(32))
-        self._putText(stageName, 1, 1, "Searching", "gray")
+        self._putText(stageName, 1, 1, "Searching", Colors.GRAY)
 
     def setButtonPointer(self, directory, num):
-        color = 'yellow'
+        color = Colors.YELLOW
         if directory == Groups.SETTINGS:
-            color = 'blue'
+            color = Colors.BLUE
         self._highlightButton(UI.BUTTON_GROUPS[directory][num], color)
 
     def setCardPointer(self, index):
@@ -415,14 +425,14 @@ class UI:
         """Show the hand at the offset provided"""
 
     def pressSettings(self):
-        self._highlightButton(Elements.BUTTON_SETTINGS, "green")
+        self._highlightButton(Elements.BUTTON_SETTINGS, Colors.GREEN)
 
     def restoreSettings(self):
-        self._highlightButton(Elements.BUTTON_SETTINGS, "yellow")
+        self._highlightButton(Elements.BUTTON_SETTINGS, Colors.YELLOW)
 
     def setStagePointer(self, num):
         """Highlight a stage white."""
-        self._colorElement(UI.STAGES[num], "white")
+        self._colorElement(UI.STAGES[num], Colors.WHITE)
         curses.doupdate()
 
     def restoreStagePointer(self, num):
@@ -445,10 +455,10 @@ class UI:
 
     def twirlSearch(self, num, i):
         stage = UI.STAGES[num]
-        self._putChar(stage, 11, 1, ' ', "gray")
+        self._putChar(stage, 11, 1, ' ', Colors.GRAY)
         if i is not None:
             ch = UI.TWIRL[i]
-            self._putChar(stage, 11, 1, ch, "gray")
+            self._putChar(stage, 11, 1, ch, Colors.GRAY)
 
     def updateButtons(self, data):
         """Updates buttons based on data (text, color, etc)"""
@@ -460,7 +470,7 @@ class UI:
             active = innerData['active']
             color = innerData['color']
             if not active:
-                color = 'gray'
+                color = Colors.GRAY
             else:
                 if color is None:
                     color = UI.ELEMENT_DEFAULTS[buttonName]['color']
@@ -475,7 +485,7 @@ class UI:
             start = innerData['start']
             label = innerData['label']
             length = innerData['length']
-            color = "white"
+            color = Colors.WHITE
             self._colorElement(buttonName, color)
             self._putText(buttonName, 0, 0, ' ' * int(length), color)
             self._putText(buttonName, start + 1, 0, label, color)
@@ -489,23 +499,23 @@ class UI:
         self._putText(Elements.WINDOW_SETTINGS, 8, 13, UI.blank(25), None)
 
         if settings[0] is True:
-            self._putText(Elements.WINDOW_SETTINGS, 8, 4, 'True', 'green')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 4, 'True', Colors.GREEN)
         else:
-            self._putText(Elements.WINDOW_SETTINGS, 8, 4, 'False', 'red')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 4, 'False', Colors.RED)
         if settings[1] == 'Slow':
-            self._putText(Elements.WINDOW_SETTINGS, 8, 7, 'Slow', 'red')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 7, 'Slow', Colors.RED)
         elif settings[1] == 'Normal':
-            self._putText(Elements.WINDOW_SETTINGS, 8, 7, 'Normal', 'yellow')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 7, 'Normal', Colors.YELLOW)
         elif settings[1] == 'Fast':
-            self._putText(Elements.WINDOW_SETTINGS, 8, 7, 'Fast', 'green')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 7, 'Fast', Colors.GREEN)
         if settings[2] is True:
-            self._putText(Elements.WINDOW_SETTINGS, 8, 10, 'True', 'green')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 10, 'True', Colors.GREEN)
         else:
-            self._putText(Elements.WINDOW_SETTINGS, 8, 10, 'False', 'red')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 10, 'False', Colors.RED)
         if settings[3] is True:
-            self._putText(Elements.WINDOW_SETTINGS, 8, 13, 'True', 'green')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 13, 'True', Colors.GREEN)
         else:
-            self._putText(Elements.WINDOW_SETTINGS, 8, 13, 'False', 'red')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 13, 'False', Colors.RED)
         curses.doupdate()
 
     def warning(self, message):

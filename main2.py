@@ -3,6 +3,7 @@ import time
 import socket
 import threading
 import curses
+import logging
 from curses import wrapper
 from ui2 import UI, Groups, Elements
 from player import Player, ComputerPlayer
@@ -47,6 +48,9 @@ class Game:
         'Normal': 'Fast',
         'Fast': 'Slow'
     }
+
+    LOGGER = logging.getLogger('Game')
+    LOGGER.setLevel(logging.INFO)
 
 
     def __init__(self, stdscreen, name):
@@ -123,6 +127,8 @@ class Game:
             _s.close()
         except OSError:
             self.canHost = False
+
+        logging.debug("Hello World")
 
     @staticmethod
     def createPlayer(name, isHuman, points):
@@ -475,6 +481,7 @@ def program():
     sys.stdout.flush()
     time.sleep(.05)
     # ui = UI(None, 'elements.txt')
+    logging.basicConfig(filename='example.log', level=logging.DEBUG)
     wrapper(main, name)
 
 if __name__ == '__main__':
