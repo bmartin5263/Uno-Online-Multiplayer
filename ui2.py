@@ -1,70 +1,107 @@
 import curses
 import curses.panel
+from enum import Enum
+
+class Elements(Enum):
+    MAIN = 0
+    TITLE = 1
+    WINDOW_MODE = 2
+    MAIN_STAGE = 3
+    BUTTON_LOCAL = 4
+    BUTTON_HOST = 5
+    BUTTON_JOIN = 6
+    BUTTON_EXIT = 7
+    WINDOW_LOBBY = 8
+    PLAYER_STAGE_0 = 9
+    PLAYER_STAGE_1 = 10
+    PLAYER_STAGE_2 = 11
+    PLAYER_STAGE_3 = 12
+    BUTTON_START = 13
+    BUTTON_ADD_AI = 14
+    BUTTON_SEARCH = 15
+    BUTTON_KICK = 16
+    BUTTON_CLOSE = 17
+    BUTTON_SETTINGS = 18
+    WINDOW_SETTINGS = 19
+    BUTTON_DISPLAY_EFFECTS = 20
+    BUTTON_COMPUTER_SPEED = 21
+    BUTTON_SHOW_HANDS = 22
+    BUTTON_DOES_NOTHING = 23
+    WINDOW_HAND = 24
+    WINDOW_MATCH = 25
+
+class Groups(Enum):
+    MODE = 0
+    LOBBY = 1
+    SETTINGS = 3
+    DEFAULT = 4
+    STAGE = 5
 
 class UI:
 
     ELEMENT_DEFAULTS = {
-        'title': {'border': 'box', 'tether': None, 'color': 'white', 'location': (0, 0), 'dimensions': (70, 7)},
-        'windowMode': {'border': 'box', 'tether': None, 'color': 'white', 'location': (17, 7), 'dimensions': (36, 21)},
-        'mainStage': {'border': 'box', 'tether': "windowMode", 'color': 'blue', 'location': (1, 1),
+        Elements.TITLE : {'border': 'box', 'tether': None, 'color': 'white', 'location': (0, 0), 'dimensions': (70, 7)},
+        Elements.WINDOW_MODE: {'border': 'box', 'tether': None, 'color': 'white', 'location': (17, 7), 'dimensions': (36, 21)},
+        Elements.MAIN_STAGE: {'border': 'box', 'tether': Elements.WINDOW_MODE, 'color': 'blue', 'location': (1, 1),
                       'dimensions': (34, 4)},
-        'buttonLocal': {'border': 'box', 'tether': "windowMode", 'color': 'white', 'location': (1, 8),
+        Elements.BUTTON_LOCAL: {'border': 'box', 'tether': Elements.WINDOW_MODE, 'color': 'white', 'location': (1, 8),
                         'dimensions': (34, 3)},
-        'buttonHost': {'border': 'box', 'tether': "windowMode", 'color': 'white', 'location': (1, 11),
+        Elements.BUTTON_HOST: {'border': 'box', 'tether': Elements.WINDOW_MODE, 'color': 'white', 'location': (1, 11),
                        'dimensions': (34, 3)},
-        'buttonJoin': {'border': 'box', 'tether': "windowMode", 'color': 'white', 'location': (1, 14),
+        Elements.BUTTON_JOIN: {'border': 'box', 'tether': Elements.WINDOW_MODE, 'color': 'white', 'location': (1, 14),
                        'dimensions': (34, 3)},
-        'buttonExit': {'border': 'box', 'tether': "windowMode", 'color': 'white', 'location': (1, 17),
+        Elements.BUTTON_EXIT: {'border': 'box', 'tether': Elements.WINDOW_MODE, 'color': 'white', 'location': (1, 17),
                        'dimensions': (34, 3)},
-        'windowLobby': {'border': 'box', 'tether': None, 'color': 'white', 'location': (0, 6), 'dimensions': (70, 26)},
-        'playerStage0': {'border': 'box', 'tether': "windowLobby", 'color': 'blue', 'location': (1, 1),
+        Elements.WINDOW_LOBBY: {'border': 'box', 'tether': None, 'color': 'white', 'location': (0, 6), 'dimensions': (70, 26)},
+        Elements.PLAYER_STAGE_0: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'blue', 'location': (1, 1),
                          'dimensions': (34, 4)},
-        'playerStage1': {'border': 'box', 'tether': "windowLobby", 'color': 'red', 'location': (35, 1),
+        Elements.PLAYER_STAGE_1: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'red', 'location': (35, 1),
                          'dimensions': (34, 4)},
-        'playerStage2': {'border': 'box', 'tether': "windowLobby", 'color': 'green', 'location': (1, 5),
+        Elements.PLAYER_STAGE_2: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'green', 'location': (1, 5),
                          'dimensions': (34, 4)},
-        'playerStage3': {'border': 'box', 'tether': "windowLobby", 'color': 'yellow', 'location': (35, 5),
+        Elements.PLAYER_STAGE_3: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'yellow', 'location': (35, 5),
                          'dimensions': (34, 4)},
-        'buttonStart': {'border': 'box', 'tether': "windowLobby", 'color': 'blue', 'location': (1, 10),
+        Elements.BUTTON_START: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'blue', 'location': (1, 10),
                          'dimensions': (34, 3)},
-        'buttonAddAI': {'border': 'box', 'tether': "windowLobby", 'color': 'white', 'location': (1, 13),
+        Elements.BUTTON_ADD_AI: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'white', 'location': (1, 13),
                          'dimensions': (17, 3)},
-        'buttonSearch': {'border': 'box', 'tether': "windowLobby", 'color': 'white', 'location': (18, 13),
+        Elements.BUTTON_SEARCH: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'white', 'location': (18, 13),
                         'dimensions': (17, 3)},
-        'buttonKick': {'border': 'box', 'tether': "windowLobby", 'color': 'white', 'location': (1, 16),
+        Elements.BUTTON_KICK: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'white', 'location': (1, 16),
                         'dimensions': (34, 3)},
-        'buttonClose': {'border': 'box', 'tether': "windowLobby", 'color': 'white', 'location': (1, 19),
+        Elements.BUTTON_CLOSE: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'white', 'location': (1, 19),
                        'dimensions': (34, 3)},
-        'buttonSettings': {'border': 'box', 'tether': "windowLobby", 'color': 'white', 'location': (1, 22),
+        Elements.BUTTON_SETTINGS: {'border': 'box', 'tether': Elements.WINDOW_LOBBY, 'color': 'white', 'location': (1, 22),
                        'dimensions': (34, 3)},
-        'windowSettings': {'border': 'box', 'tether': None, 'color': 'white', 'location': (35, 16), 'dimensions': (34, 15)},
-        'buttonDisplayEffects': {'border': None, 'tether': "windowSettings", 'color': 'white', 'location': (1, 3),
+        Elements.WINDOW_SETTINGS: {'border': 'box', 'tether': None, 'color': 'white', 'location': (35, 16), 'dimensions': (34, 15)},
+        Elements.BUTTON_DISPLAY_EFFECTS: {'border': None, 'tether': Elements.WINDOW_SETTINGS, 'color': 'white', 'location': (1, 3),
                            'dimensions': (32, 1)},
-        'buttonComputerSpeed': {'border': None, 'tether': "windowSettings", 'color': 'white', 'location': (1, 6),
+        Elements.BUTTON_COMPUTER_SPEED: {'border': None, 'tether': Elements.WINDOW_SETTINGS, 'color': 'white', 'location': (1, 6),
                                  'dimensions': (32, 1)},
-        'buttonShowHands': {'border': None, 'tether': "windowSettings", 'color': 'white', 'location': (1, 9),
+        Elements.BUTTON_SHOW_HANDS: {'border': None, 'tether': Elements.WINDOW_SETTINGS, 'color': 'white', 'location': (1, 9),
                                  'dimensions': (32, 1)},
-        'buttonDoesNothing': {'border': None, 'tether': "windowSettings", 'color': 'white', 'location': (1, 12),
+        Elements.BUTTON_DOES_NOTHING: {'border': None, 'tether': Elements.WINDOW_SETTINGS, 'color': 'white', 'location': (1, 12),
                                  'dimensions': (32, 1)},
     }
 
     GROUPS = {
-        'lobby' : ('windowLobby', 'playerStage0', 'playerStage1', 'playerStage2', 'playerStage3', 'buttonStart',
-                   'buttonAddAI', 'buttonSearch', 'buttonKick', 'buttonClose', 'buttonSettings'),
-        'mode' : ('windowMode', 'mainStage', 'buttonLocal', 'buttonHost', 'buttonJoin', 'buttonExit'),
-        'default' : ('title',),
-        'settings' : ('windowSettings', 'buttonDisplayEffects', 'buttonComputerSpeed', 'buttonShowHands',
-                      'buttonDoesNothing')
+        Groups.LOBBY : (Elements.WINDOW_LOBBY, Elements.PLAYER_STAGE_0, Elements.PLAYER_STAGE_1, Elements.PLAYER_STAGE_2, Elements.PLAYER_STAGE_3, Elements.BUTTON_START,
+                   Elements.BUTTON_ADD_AI, Elements.BUTTON_SEARCH, Elements.BUTTON_KICK, Elements.BUTTON_CLOSE, Elements.BUTTON_SETTINGS),
+        Groups.MODE : (Elements.WINDOW_MODE, Elements.MAIN_STAGE, Elements.BUTTON_LOCAL, Elements.BUTTON_HOST, Elements.BUTTON_JOIN, Elements.BUTTON_EXIT),
+        Groups.DEFAULT : (Elements.TITLE,),
+        Groups.SETTINGS : (Elements.WINDOW_SETTINGS, Elements.BUTTON_DISPLAY_EFFECTS, Elements.BUTTON_COMPUTER_SPEED, Elements.BUTTON_SHOW_HANDS,
+                      Elements.BUTTON_DOES_NOTHING)
     }
 
     BUTTON_GROUPS = {
-        'mode' : ('buttonLocal', 'buttonHost', 'buttonJoin', 'buttonExit'),
-        'lobby' : ('buttonStart', 'buttonAddAI', 'buttonSearch', 'buttonKick', 'buttonClose', 'buttonSettings'),
-        'settings' : ('buttonDisplayEffects', 'buttonComputerSpeed', 'buttonShowHands', 'buttonDoesNothing')
+        Groups.MODE : (Elements.BUTTON_LOCAL, Elements.BUTTON_HOST, Elements.BUTTON_JOIN, Elements.BUTTON_EXIT),
+        Groups.LOBBY : (Elements.BUTTON_START, Elements.BUTTON_ADD_AI, Elements.BUTTON_SEARCH, Elements.BUTTON_KICK, Elements.BUTTON_CLOSE, Elements.BUTTON_SETTINGS),
+        Groups.SETTINGS : (Elements.BUTTON_DISPLAY_EFFECTS, Elements.BUTTON_COMPUTER_SPEED, Elements.BUTTON_SHOW_HANDS, Elements.BUTTON_DOES_NOTHING)
     }
 
     COLORS = ('blue', 'red', 'green', 'yellow')
     TWIRL = ('|', '/', '-', '\\')
+    STAGES = (Elements.PLAYER_STAGE_0, Elements.PLAYER_STAGE_1, Elements.PLAYER_STAGE_2, Elements.PLAYER_STAGE_3)
 
     def __init__(self, screen):
 
@@ -73,7 +110,7 @@ class UI:
         self.currentCard = -1
 
         self.e = {
-            'main' : {'window': screen, 'panel': None, 'location': (0,0)},
+            Elements.MAIN : {'window': screen, 'panel': None, 'location': (0,0)},
         }
 
         curses.curs_set(0)
@@ -112,16 +149,16 @@ class UI:
             self._createElement(e)
 
         self._initializeElements()
-        self.openGroup('default')
+        self.openGroup(Groups.DEFAULT)
 
         self.clearStage(0)
         self.clearStage(1)
         self.clearStage(2)
         self.clearStage(3)
 
-        #self.openGroup('lobby')
-        #self.openGroup('settings')
-        #self.openGroup('mode')
+        #self.openGroup(Groups.LOBBY)
+        #self.openGroup(Groups.SETTINGS)
+        #self.openGroup(Groups.MODE)
 
     @staticmethod
     def blank(length):
@@ -129,7 +166,7 @@ class UI:
 
     def getInput(self):
         curses.flushinp()
-        k = self.e['main']['window'].getch()
+        k = self.e[Elements.MAIN]['window'].getch()
         return k
 
     def _createElement(self, element):
@@ -150,15 +187,15 @@ class UI:
             window.bkgd(ord(' ') | curses.color_pair(1))
             window.attrset(self.TEXT_COLORS[color])
         if border == 'box':
-            if element == 'title':
+            if element == Elements.TITLE:
                 window.border(curses.ACS_VLINE, curses.ACS_VLINE, curses.ACS_HLINE, curses.ACS_HLINE,
                               curses.ACS_ULCORNER,
                               curses.ACS_URCORNER, curses.ACS_LTEE, curses.ACS_RTEE)
-            elif element in ('windowLobby', 'windowHand'):
+            elif element in (Elements.WINDOW_LOBBY, Elements.WINDOW_HAND):
                 window.border(curses.ACS_VLINE, curses.ACS_VLINE, curses.ACS_HLINE, curses.ACS_HLINE,
                               curses.ACS_LTEE,
                               curses.ACS_RTEE, curses.ACS_LLCORNER, curses.ACS_LRCORNER)
-            elif element == 'windowMatch':
+            elif element == Elements.WINDOW_MATCH:
                 window.border(curses.ACS_VLINE, curses.ACS_VLINE, curses.ACS_HLINE, curses.ACS_HLINE,
                               curses.ACS_LTEE,
                               curses.ACS_RTEE, curses.ACS_LTEE, curses.ACS_RTEE)
@@ -179,25 +216,25 @@ class UI:
 
     def _initializeElements(self):
         """Put initial text and colors to the elements"""
-        self._putText('title', 25, 1, "|| ||", 'blue')
-        self._putText('title', 31, 1, "||\\ ||", 'green')
-        self._putText('title', 39, 1, "// \\\\", 'red')
-        self._putText('title', 25, 2, "|| ||", 'blue')
-        self._putText('title', 31, 2, "||\\\\||", 'green')
-        self._putText('title', 38, 2, "((   ))", 'red')
-        self._putText('title', 25, 3, "\\\\ //", 'blue')
-        self._putText('title', 31, 3, "|| \\||", 'green')
-        self._putText('title', 39, 3, "\\\\ //", 'red')
-        self._putChar('title', 0, 4, curses.ACS_LTEE, 'white')
+        self._putText(Elements.TITLE, 25, 1, "|| ||", 'blue')
+        self._putText(Elements.TITLE, 31, 1, "||\\ ||", 'green')
+        self._putText(Elements.TITLE, 39, 1, "// \\\\", 'red')
+        self._putText(Elements.TITLE, 25, 2, "|| ||", 'blue')
+        self._putText(Elements.TITLE, 31, 2, "||\\\\||", 'green')
+        self._putText(Elements.TITLE, 38, 2, "((   ))", 'red')
+        self._putText(Elements.TITLE, 25, 3, "\\\\ //", 'blue')
+        self._putText(Elements.TITLE, 31, 3, "|| \\||", 'green')
+        self._putText(Elements.TITLE, 39, 3, "\\\\ //", 'red')
+        self._putChar(Elements.TITLE, 0, 4, curses.ACS_LTEE, 'white')
 
         for i in range(1, 69):
-            self._putChar('title', i, 4, curses.ACS_HLINE, 'white')
-        self._putChar('title', 69, 4, curses.ACS_RTEE, 'white')
+            self._putChar(Elements.TITLE, i, 4, curses.ACS_HLINE, 'white')
+        self._putChar(Elements.TITLE, 69, 4, curses.ACS_RTEE, 'white')
 
-        self._putChar('windowLobby', 0, 9, curses.ACS_LTEE, 'white')
+        self._putChar(Elements.WINDOW_LOBBY, 0, 9, curses.ACS_LTEE, 'white')
         for i in range(1, 69):
-            self._putChar('windowLobby', i, 9, curses.ACS_HLINE, 'white')
-        self._putChar('windowLobby', 69, 9, curses.ACS_RTEE, 'white')
+            self._putChar(Elements.WINDOW_LOBBY, i, 9, curses.ACS_HLINE, 'white')
+        self._putChar(Elements.WINDOW_LOBBY, 69, 9, curses.ACS_RTEE, 'white')
 
         """
         self.putChar('handWindow', 0, 2, curses.ACS_LTEE, 'white', False)
@@ -206,34 +243,34 @@ class UI:
         self.putChar('handWindow', 69, 2, curses.ACS_RTEE, 'white', True)
         """
 
-        self._putChar("windowMode", 0, 5, curses.ACS_LTEE, 'white')
-        self._putChar("windowMode", 0, 7, curses.ACS_LTEE, 'white')
+        self._putChar(Elements.WINDOW_MODE, 0, 5, curses.ACS_LTEE, 'white')
+        self._putChar(Elements.WINDOW_MODE, 0, 7, curses.ACS_LTEE, 'white')
         for i in range(1, 35):
-            self._putChar("windowMode", i, 5, curses.ACS_HLINE, 'white')
-            self._putChar("windowMode", i, 7, curses.ACS_HLINE, 'white')
-        self._putChar("windowMode", 35, 5, curses.ACS_RTEE, 'white')
-        self._putChar("windowMode", 0, 7, curses.ACS_LTEE, 'white')
+            self._putChar(Elements.WINDOW_MODE, i, 5, curses.ACS_HLINE, 'white')
+            self._putChar(Elements.WINDOW_MODE, i, 7, curses.ACS_HLINE, 'white')
+        self._putChar(Elements.WINDOW_MODE, 35, 5, curses.ACS_RTEE, 'white')
+        self._putChar(Elements.WINDOW_MODE, 0, 7, curses.ACS_LTEE, 'white')
 
-        self._putText("windowSettings", 13, 1, "Settings", 'white')
-        self._putChar("windowSettings", 0, 2, curses.ACS_LTEE, 'white')
+        self._putText(Elements.WINDOW_SETTINGS, 13, 1, "Settings", 'white')
+        self._putChar(Elements.WINDOW_SETTINGS, 0, 2, curses.ACS_LTEE, 'white')
         for i in range(1, 33):
-            self._putChar("windowSettings", i, 2, curses.ACS_HLINE, 'white')
-        self._putChar("windowSettings", 33, 2, curses.ACS_RTEE, 'white')
+            self._putChar(Elements.WINDOW_SETTINGS, i, 2, curses.ACS_HLINE, 'white')
+        self._putChar(Elements.WINDOW_SETTINGS, 33, 2, curses.ACS_RTEE, 'white')
 
         data = {
-            'buttonStart': {'start': 11, 'length': 32, 'label': 'Start Game', 'active': False, 'color': None},
-            'buttonAddAI': {'start': 5, 'length': 15, 'label': 'Add AI', 'active': False, 'color': None},
-            'buttonSearch': {'start': 4, 'length': 15, 'label': 'Search', 'active': False, 'color': None},
-            'buttonKick': {'start': 11, 'length': 32, 'label': 'Kick Player', 'active': False, 'color': None},
-            'buttonClose': {'start': 11, 'length': 32, 'label': 'Close Room', 'active': False, 'color': None},
-            'buttonSettings': {'start': 12, 'length': 32, 'label': 'Settings', 'active': False, 'color': None},
+            Elements.BUTTON_START: {'start': 11, 'length': 32, 'label': 'Start Game', 'active': False, 'color': None},
+            Elements.BUTTON_ADD_AI: {'start': 5, 'length': 15, 'label': 'Add AI', 'active': False, 'color': None},
+            Elements.BUTTON_SEARCH: {'start': 4, 'length': 15, 'label': 'Search', 'active': False, 'color': None},
+            Elements.BUTTON_KICK: {'start': 11, 'length': 32, 'label': 'Kick Player', 'active': False, 'color': None},
+            Elements.BUTTON_CLOSE: {'start': 11, 'length': 32, 'label': 'Close Room', 'active': False, 'color': None},
+            Elements.BUTTON_SETTINGS: {'start': 12, 'length': 32, 'label': 'Settings', 'active': False, 'color': None},
         }
 
         sdata = {
-            'buttonDisplayEffects' : {'start':0, 'length': 32, 'label': '- Display Effects', 'active': False, 'color': None},
-            'buttonComputerSpeed' : {'start': 0, 'length': 32, 'label': '- Computer Speed', 'active': False, 'color': None},
-            'buttonShowHands' : {'start': 0, 'length': 32, 'label': '- Show Computer Hands', 'active': False, 'color': None},
-            'buttonDoesNothing' : {'start': 0, 'length': 32, 'label': '- Does Nothing', 'active': False, 'color': None},
+            Elements.BUTTON_DISPLAY_EFFECTS : {'start':0, 'length': 32, 'label': '- Display Effects', 'active': False, 'color': None},
+            Elements.BUTTON_COMPUTER_SPEED : {'start': 0, 'length': 32, 'label': '- Computer Speed', 'active': False, 'color': None},
+            Elements.BUTTON_SHOW_HANDS : {'start': 0, 'length': 32, 'label': '- Show Computer Hands', 'active': False, 'color': None},
+            Elements.BUTTON_DOES_NOTHING : {'start': 0, 'length': 32, 'label': '- Does Nothing', 'active': False, 'color': None},
         }
 
         self.updateButtons(data)
@@ -243,7 +280,7 @@ class UI:
         curses.doupdate()
 
         for element in self.e:
-            if element != 'main':
+            if element != Elements.MAIN:
                 self.e[element]['panel'].hide()
 
         UI._updatePanels()
@@ -253,11 +290,11 @@ class UI:
         if warning:
             color = 'red'
         if title:
-            self._putText('title', 1, 5, UI.blank(68), color)
-            self._putText('title', 1, 5, text, color)
+            self._putText(Elements.TITLE, 1, 5, UI.blank(68), color)
+            self._putText(Elements.TITLE, 1, 5, text, color)
         else:
-            self._putText('modeWindow', 1, 6, UI.blank(34), color)
-            self._putText('modeWindow', 1, 6, text, color)
+            self._putText(Elements.WINDOW_MODE, 1, 6, UI.blank(34), color)
+            self._putText(Elements.WINDOW_MODE, 1, 6, text, color)
         curses.doupdate()
 
     def _highlightButton(self, button, color):
@@ -312,21 +349,21 @@ class UI:
 
     def cancelStage(self):
         """Set text of stage 0 to 'cancel' for use in kicking players"""
-        self._putText('playerStage0', 1, 1, UI.blank(32))
-        self._putText('playerStage0', 1, 2, UI.blank(32))
-        self._putText('playerStage0', 1, 1, "Cancel")
+        self._putText(Elements.PLAYER_STAGE_0, 1, 1, UI.blank(32))
+        self._putText(Elements.PLAYER_STAGE_0, 1, 2, UI.blank(32))
+        self._putText(Elements.PLAYER_STAGE_0, 1, 1, "Cancel")
         curses.doupdate()
 
     def clearStage(self, num):
         """Clears the stage of any players"""
         if num < 0:
-            stageName = 'mainStage'
+            stage = Elements.MAIN_STAGE
         else:
-            stageName = "playerStage" + str(num)
-        self._colorElement(stageName, "gray")
-        self._putText(stageName, 1, 1, UI.blank(32))
-        self._putText(stageName, 1, 2, UI.blank(32))
-        self._putText(stageName, 1, 1, "No Player", "gray")
+            stage = UI.STAGES[num]
+        self._colorElement(stage, "gray")
+        self._putText(stage, 1, 1, UI.blank(32))
+        self._putText(stage, 1, 2, UI.blank(32))
+        self._putText(stage, 1, 1, "No Player", "gray")
         curses.doupdate()
 
     def closeGroup(self, group):
@@ -353,11 +390,15 @@ class UI:
         self._restoreButton(UI.BUTTON_GROUPS[directory][num])
 
     def searchStage(self, num):
-        """Set stage to for searching."""
+        """Set stage to for searching. Does not update"""
+        stageName = UI.STAGES[num]
+        self._putText(stageName, 1, 1, UI.blank(32))
+        self._putText(stageName, 1, 2, UI.blank(32))
+        self._putText(stageName, 1, 1, "Searching", "gray")
 
     def setButtonPointer(self, directory, num):
         color = 'yellow'
-        if directory == 'settings':
+        if directory == Groups.SETTINGS:
             color = 'blue'
         self._highlightButton(UI.BUTTON_GROUPS[directory][num], color)
 
@@ -374,34 +415,40 @@ class UI:
         """Show the hand at the offset provided"""
 
     def pressSettings(self):
-        self._highlightButton("buttonSettings", "green")
+        self._highlightButton(Elements.BUTTON_SETTINGS, "green")
 
     def restoreSettings(self):
-        self._highlightButton("buttonSettings", "yellow")
+        self._highlightButton(Elements.BUTTON_SETTINGS, "yellow")
 
     def setStagePointer(self, num):
         """Highlight a stage white."""
-        self._colorElement("playerStage"+str(num), "white")
+        self._colorElement(UI.STAGES[num], "white")
         curses.doupdate()
 
     def restoreStagePointer(self, num):
         """Return stage to original color"""
-        self._colorElement("playerStage" + str(num), None)
+        self._colorElement(UI.STAGES[num], None)
         curses.doupdate()
 
     def setStageWithPlayer(self, num, player):
         """Add Player Details to Lobby Stage. Use -1 for main stage"""
         if num < 0:
-            stageName = 'mainStage'
+            stage = Elements.MAIN_STAGE
         else:
-            stageName = "playerStage" + str(num)
-        self._colorElement(stageName, None)
-        self._putText(stageName, 1, 1, UI.blank(32))
-        self._putText(stageName, 1, 1, player.name)
-        self._putText(stageName, 1, 2, UI.blank(32))
-        self._putText(stageName, 1, 2, 'Points: {}'.format(str(player.points)))
+            stage = UI.STAGES[num]
+        self._colorElement(stage, None)
+        self._putText(stage, 1, 1, UI.blank(32))
+        self._putText(stage, 1, 1, player.name)
+        self._putText(stage, 1, 2, UI.blank(32))
+        self._putText(stage, 1, 2, 'Points: {}'.format(str(player.points)))
         curses.doupdate()
 
+    def twirlSearch(self, num, i):
+        stage = UI.STAGES[num]
+        self._putChar(stage, 11, 1, ' ', "gray")
+        if i is not None:
+            ch = UI.TWIRL[i]
+            self._putChar(stage, 11, 1, ch, "gray")
 
     def updateButtons(self, data):
         """Updates buttons based on data (text, color, etc)"""
@@ -436,29 +483,29 @@ class UI:
 
     def updateSettings(self, settings):
         # [displayEffects(True,False), computerSpeed(Slow, Normal, Fast), showComputerHands(True, False), Does Nothing
-        self._putText('windowSettings', 8, 4, UI.blank(25), None)
-        self._putText('windowSettings', 8, 7, UI.blank(25), None)
-        self._putText('windowSettings', 8, 10, UI.blank(25), None)
-        self._putText('windowSettings', 8, 13, UI.blank(25), None)
+        self._putText(Elements.WINDOW_SETTINGS, 8, 4, UI.blank(25), None)
+        self._putText(Elements.WINDOW_SETTINGS, 8, 7, UI.blank(25), None)
+        self._putText(Elements.WINDOW_SETTINGS, 8, 10, UI.blank(25), None)
+        self._putText(Elements.WINDOW_SETTINGS, 8, 13, UI.blank(25), None)
 
         if settings[0] is True:
-            self._putText('windowSettings', 8, 4, 'True', 'green')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 4, 'True', 'green')
         else:
-            self._putText('windowSettings', 8, 4, 'False', 'red')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 4, 'False', 'red')
         if settings[1] == 'Slow':
-            self._putText('windowSettings', 8, 7, 'Slow', 'red')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 7, 'Slow', 'red')
         elif settings[1] == 'Normal':
-            self._putText('windowSettings', 8, 7, 'Normal', 'yellow')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 7, 'Normal', 'yellow')
         elif settings[1] == 'Fast':
-            self._putText('windowSettings', 8, 7, 'Fast', 'green')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 7, 'Fast', 'green')
         if settings[2] is True:
-            self._putText('windowSettings', 8, 10, 'True', 'green')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 10, 'True', 'green')
         else:
-            self._putText('windowSettings', 8, 10, 'False', 'red')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 10, 'False', 'red')
         if settings[3] is True:
-            self._putText('windowSettings', 8, 13, 'True', 'green')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 13, 'True', 'green')
         else:
-            self._putText('windowSettings', 8, 13, 'False', 'red')
+            self._putText(Elements.WINDOW_SETTINGS, 8, 13, 'False', 'red')
         curses.doupdate()
 
     def warning(self, message):

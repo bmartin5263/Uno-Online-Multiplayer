@@ -4,7 +4,7 @@ import socket
 import threading
 import curses
 from curses import wrapper
-from ui2 import UI
+from ui2 import UI, Groups, Elements
 from player import Player, ComputerPlayer
 
 class Game:
@@ -14,13 +14,13 @@ class Game:
     COMPUTER_NAMES = ('Watson', 'SkyNet', 'Hal 9000', 'Metal Gear')
 
     MOVEMENT_MAPS = {
-        'mode' : {
+        Groups.MODE : {
             0: [3, 1, 0, 0],
             1: [0, 2, 1, 1],
             2: [1, 3, 2, 2],
             3: [2, 0, 3, 3],
         },
-        'lobby' : {
+        Groups.LOBBY : {
             0: [5, 1, 0, 0],
             1: [0, 3, 2, 2],
             2: [0, 3, 1, 1],
@@ -28,13 +28,13 @@ class Game:
             4: [3, 5, 4, 4],
             5: [4, 0, 5, 5],
         },
-        'stage' : {
+        Groups.STAGE : {
             0: [2, 2, 1, 1],
             1: [3, 3, 0, 0],
             2: [0, 0, 3, 3],
             3: [1, 1, 2, 2],
         },
-        'settings' : {
+        Groups.SETTINGS : {
             0: [3, 1, 0, 0],
             1: [0, 2, 1, 1],
             2: [1, 3, 2, 2],
@@ -62,7 +62,7 @@ class Game:
         self.myPlayer = Game.createPlayer(name, True, 0)
         self.gameActive = False          # Exit Program?
         self.canHost = True             # Do you have a network connection?
-        self.directory = 'mode'
+        self.directory = Groups.MODE
 
         # Match Data
         self.local = False              # is this a local game
@@ -102,18 +102,18 @@ class Game:
         #self.hThreadActive = []
 
         #self.numPlayers = 0
-        #self.lock = threading.RLock()
+        self.lock = threading.RLock()
 
         #self.activeButtons = {
-        #    'mode': [],
+        #    Groups.MODE: [],
         #    'lobby': [],
-        #    'settings': [],
+        #    Groups.SETTINGS: [],
         #}
 
         #self.pointers = {
         #    'lobby': self.lobbyPointer,
-        #    'mode': self.modePointer,
-        #    'settings': self.settingsPointer
+        #    Groups.MODE: self.modePointer,
+        #    Groups.SETTINGS: self.settingsPointer
         #}
 
         _s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -149,8 +149,8 @@ class Game:
         #    self.hListenThreads[self.numPlayers] = t
         #    self.hThreadActive[self.numPlayers] = True
         #    t.start()
-        self.ui.setStageWithPlayer(self.numPlayers, player)
-        self.ui.console("TEST")
+        self.modifyUI(self.ui.setStageWithPlayer, self.numPlayers, player)
+        self.modifyUI(self.ui.console, "TEST")
         self.numPlayers += 1
 
     def beginLocal(self):
@@ -160,77 +160,82 @@ class Game:
         self.addPlayer(self.myPlayer)
 
     def cleanLobby(self):
+        if self.twirlThread is not None:
+            self.twirlThread.join()
+            self.twirlThread = None
         for i in range(self.numPlayers):
             self.removePlayer(0)
 
     def enterLobby(self):
-        self.ui.openGroup('lobby')
-        self.ui.openGroup('settings')
-        self.ui.updateSettings(self.settings)
+        self.modifyUI(self.ui.openGroup, Groups.LOBBY)
+        self.modifyUI(self.ui.openGroup, Groups.SETTINGS)
+        #self.modifyUI(self.ui.updateSettings, self.settings)
 
         if self.local:
             self.beginLocal()
 
-        self.pointer = self.getDefaultPointer('lobby')
-        self.updateButtons('lobby')
-        self.setPointer('lobby', self.pointer, None)
-        while self.directory == 'lobby':
+        self.pointer = self.getDefaultPointer(Groups.LOBBY)
+        self.updateButtons(Groups.LOBBY)
+        self.setPointer(Groups.LOBBY, self.pointer, None)
+        while self.directory == Groups.LOBBY:
 
             k = self.ui.getInput()
 
             if k in Game.MOVEMENT:
-                newPointer = self.movePointer('lobby', k)
+                newPointer = self.movePointer(Groups.LOBBY, k)
                 if newPointer != self.pointer:
-                    self.setPointer('lobby', newPointer, self.pointer)
+                    self.setPointer(Groups.LOBBY, newPointer, self.pointer)
                     self.pointer = newPointer
             if k in Game.SELECT:
-                self.pressButton('lobby')
-                self.updateButtons('lobby')
-                self.setPointer('lobby', self.pointer, None)
+                self.pressButton(Groups.LOBBY)
+                self.updateButtons(Groups.LOBBY)
+                self.setPointer(Groups.LOBBY, self.pointer, None)
 
         self.cleanLobby()
-        self.updateButtons('lobby')
-        self.ui.closeGroup('lobby')
-        self.ui.closeGroup('settings')
+        self.updateButtons(Groups.LOBBY)
+        self.modifyUI(self.ui.closeGroup, Groups.LOBBY)
+        self.modifyUI(self.ui.closeGroup, Groups.SETTINGS)
 
     def enterMode(self):
-        self.ui.openGroup('lobby')
-        self.ui.openGroup('settings')
-        self.ui.openGroup('mode')
+        self.modifyUI(self.ui.openGroup, Groups.LOBBY)
+        self.modifyUI(self.ui.openGroup, Groups.SETTINGS)
+        self.modifyUI(self.ui.openGroup, Groups.MODE)
 
-        self.pointer = self.getDefaultPointer('mode')
-        self.updateButtons('mode')
-        self.setPointer('mode', self.pointer, None)
-        while self.directory == 'mode':
+        self.modifyUI(self.ui.modeConsole, "Welcome to Uno! Select a Mode")
+
+        self.pointer = self.getDefaultPointer(Groups.MODE)
+        self.updateButtons(Groups.MODE)
+        self.setPointer(Groups.MODE, self.pointer, None)
+        while self.directory == Groups.MODE:
 
             k = self.ui.getInput()
 
             if k in Game.MOVEMENT:
-                newPointer = self.movePointer('mode', k)
+                newPointer = self.movePointer(Groups.MODE, k)
                 if newPointer != self.pointer:
-                    self.setPointer('mode', newPointer, self.pointer)
+                    self.setPointer(Groups.MODE, newPointer, self.pointer)
                     self.pointer = newPointer
             if k in Game.SELECT:
-                self.pressButton('mode')
+                self.pressButton(Groups.MODE)
 
-        self.ui.closeGroup('mode')
-        self.ui.closeGroup('settings')
-        self.ui.closeGroup('lobby')
+        self.modifyUI(self.ui.closeGroup, Groups.MODE)
+        self.modifyUI(self.ui.closeGroup, Groups.SETTINGS)
+        self.modifyUI(self.ui.closeGroup, Groups.LOBBY)
 
     def enterSettings(self):
-        self.ui.pressSettings()
+        self.modifyUI(self.ui.pressSettings)
 
         settings = list(self.settings)
         pointer = 0
-        self.ui.setButtonPointer('settings', pointer)
+        self.modifyUI(self.ui.setButtonPointer, Groups.SETTINGS, pointer)
         while True:
 
             k = self.ui.getInput()
 
             if k in Game.MOVEMENT:
-                self.ui.resetButtonPointer('settings', pointer)
-                pointer = self.moveSettingsPointer(k, pointer)
-                self.ui.setButtonPointer('settings', pointer)
+                self.modifyUI(self.ui.resetButtonPointer, Groups.SETTINGS, pointer)
+                pointer = Game.moveSettingsPointer(k, pointer)
+                self.modifyUI(self.ui.setButtonPointer, Groups.SETTINGS, pointer)
 
             elif k == ord(' '):
                 if pointer == 0:
@@ -246,23 +251,23 @@ class Game:
             elif k in (ord('\n'), 27):
                 break
 
-        self.ui.resetButtonPointer('settings', pointer)
-        self.ui.restoreSettings()
+        self.modifyUI(self.ui.resetButtonPointer, Groups.SETTINGS, pointer)
+        self.modifyUI(self.ui.restoreSettings)
         return settings
 
 
     def enterStage(self):
-        self.ui.cancelStage()
+        self.modifyUI(self.ui.cancelStage)
 
         pointer = 0
-        self.ui.setStagePointer(pointer)
+        self.modifyUI(self.ui.setStagePointer, pointer)
 
         while True:
 
             k = self.ui.getInput()
 
             if k in Game.MOVEMENT:
-                newPointer = self.moveStagePointer(k, pointer)
+                newPointer = Game.moveStagePointer(k, pointer)
                 if newPointer != pointer:
                     self.ui.restoreStagePointer(pointer)
                     self.ui.setStagePointer(newPointer)
@@ -270,13 +275,13 @@ class Game:
             if k in Game.SELECT:
                 break
 
-        self.ui.setStageWithPlayer(0, self.myPlayer)
+        self.modifyUI(self.ui.setStageWithPlayer, 0, self.myPlayer)
         return pointer
 
     def getDefaultPointer(self, directory):
-        if directory == 'mode':
+        if directory == Groups.MODE:
             return 0
-        elif directory == 'lobby':
+        elif directory == Groups.LOBBY:
             if self.local:
                 return 1
             else:
@@ -285,15 +290,19 @@ class Game:
                 else:
                     return 4
 
+    def modifyUI(self, func, *args):
+        with self.lock:
+            func(*args)
+
     def movePointer(self, directory, movement):
         moveNum = Game.MOVEMENT.index(movement)
         moveMap = Game.MOVEMENT_MAPS[directory]
-        if directory == 'mode':
+        if directory == Groups.MODE:
             newPointer = moveMap[self.pointer][moveNum]
             while not self.active[newPointer]:
                 newPointer = moveMap[newPointer][moveNum]
             return newPointer
-        elif directory == 'lobby':
+        elif directory == Groups.LOBBY:
             newPointer = moveMap[self.pointer][moveNum]
             if newPointer == 1 and not self.active[1]:
                 newPointer = 2
@@ -308,55 +317,63 @@ class Game:
                     newPointer = 1
             return newPointer
 
-    def moveStagePointer(self, movement, pointer):
+    @staticmethod
+    def moveStagePointer(movement, pointer):
         moveNum = Game.MOVEMENT.index(movement)
-        moveMap = Game.MOVEMENT_MAPS['stage']
+        moveMap = Game.MOVEMENT_MAPS[Groups.STAGE]
         newPointer = moveMap[pointer][moveNum]
         return newPointer
 
-    def moveSettingsPointer(self, movement, pointer):
+    @staticmethod
+    def moveSettingsPointer(movement, pointer):
         moveNum = Game.MOVEMENT.index(movement)
-        moveMap = Game.MOVEMENT_MAPS['settings']
+        moveMap = Game.MOVEMENT_MAPS[Groups.SETTINGS]
         newPointer = moveMap[pointer][moveNum]
         return newPointer
 
     def pressButton(self, directory):
-        if directory == 'mode':
+        if directory == Groups.MODE:
             if self.pointer == 0:                # Local
-                self.directory = 'lobby'
+                self.directory = Groups.LOBBY
                 self.local = True
             elif self.pointer == 1:              # Host
-                self.directory = 'lobby'
+                self.directory = Groups.LOBBY
                 self.local = False
                 self.hosting = True
             elif self.pointer == 2:              # Join
-                self.directory = 'lobby'
+                self.directory = Groups.LOBBY
                 self.local = False
                 self.hosting = False
             elif self.pointer == 3:              # Exit
                 self.gameActive = False
                 self.directory = None
-        elif directory == 'lobby':
+        elif directory == Groups.LOBBY:
             if self.pointer == 0:                # Begin Match
                 pass
             elif self.pointer == 1:              # Add AI
                 if self.numPlayers < 4:
                     self.newAI()
                     if self.numPlayers == 4:
-                        self.pointer = self.movePointer('lobby', curses.KEY_DOWN)
+                        self.pointer = self.movePointer(Groups.LOBBY, curses.KEY_DOWN)
             elif self.pointer == 2:              # Search
                 self.searching = not self.searching
+                if self.searching:
+                    self.twirlThread = threading.Thread(target=self.t_twirlSearch)
+                    self.twirlThread.start()
+                else:
+                    self.twirlThread.join()
             elif self.pointer == 3:              # Kick
                 if self.numPlayers > 1:
                     num = self.enterStage()
                     if num != 0:
                         self.removePlayer(num)
                         if self.numPlayers == 1:
-                            self.pointer = self.movePointer('lobby', curses.KEY_UP)
+                            self.pointer = self.movePointer(Groups.LOBBY, curses.KEY_UP)
             elif self.pointer == 4:              # Leave
-                self.directory = 'mode'
+                self.directory = Groups.MODE
                 self.local = False
                 self.hosting = False
+                self.searching = False
             elif self.pointer == 5:              # Settings
                 settings = self.enterSettings()
                 if settings != self.settings:
@@ -365,55 +382,70 @@ class Game:
     def removePlayer(self, playerNum):
         del self.playerStaging[playerNum]
         for i, player in enumerate(self.playerStaging):
-            self.ui.setStageWithPlayer(i, player)
+            self.modifyUI(self.ui.setStageWithPlayer, i, player)
         self.numPlayers -= 1
-        self.ui.clearStage(self.numPlayers)
-        self.updateButtons('lobby')
+        self.modifyUI(self.ui.clearStage, self.numPlayers)
+        self.updateButtons(Groups.LOBBY)
 
     def setPointer(self, directory, pointer, old):
         if old is not None:
-            self.ui.resetButtonPointer(directory, old)
+            self.modifyUI(self.ui.resetButtonPointer, directory, old)
         if pointer is not None:
-            self.ui.setButtonPointer(directory, pointer)
+            self.modifyUI(self.ui.setButtonPointer, directory, pointer)
 
     def start(self):
         self.gameActive = True
-        self.directory = 'mode'
-        self.ui.setStageWithPlayer(-1, self.myPlayer)
+        self.directory = Groups.MODE
+        self.modifyUI(self.ui.setStageWithPlayer, -1, self.myPlayer)
         while self.gameActive:
-            if self.directory == 'mode':
+            if self.directory == Groups.MODE:
                 self.enterMode()
-            elif self.directory == 'lobby':
+            elif self.directory == Groups.LOBBY:
                 self.enterLobby()
+
+    def t_twirlSearch(self):
+        for i in range(self.numPlayers, 4):
+            self.modifyUI(self.ui.searchStage, i)
+        curses.doupdate()
+        while self.searching:
+            for i in range(4):
+                for j in range(self.numPlayers, 4):
+                    self.modifyUI(self.ui.twirlSearch, j, i)
+                curses.doupdate()
+                time.sleep(.1)
+                if not self.searching:
+                    break
+        for i in range(self.numPlayers, 4):
+            self.modifyUI(self.ui.clearStage, i)
 
     def updateButtons(self, directory):
         data = {}
-        if directory == 'mode':
+        if directory == Groups.MODE:
             data = {
-                'buttonHost' : { 'start': 8, 'length': 32, 'label': 'Host Multiplayer', 'active' : self.canHost, 'color':None},
-                'buttonJoin' : { 'start': 8, 'length': 32, 'label': 'Join Multiplayer', 'active' : True, 'color':None},
-                'buttonLocal' : { 'start': 7, 'length': 32, 'label': 'Local Singleplayer', 'active' : True, 'color':None},
-                'buttonExit' : { 'start': 14, 'length': 32, 'label': 'Exit', 'active' : True, 'color':None},
+                Elements.BUTTON_HOST : { 'start': 8, 'length': 32, 'label': 'Host Multiplayer', 'active' : self.canHost, 'color':None},
+                Elements.BUTTON_JOIN : { 'start': 8, 'length': 32, 'label': 'Join Multiplayer', 'active' : True, 'color':None},
+                Elements.BUTTON_LOCAL : { 'start': 7, 'length': 32, 'label': 'Local Singleplayer', 'active' : True, 'color':None},
+                Elements.BUTTON_EXIT : { 'start': 14, 'length': 32, 'label': 'Exit', 'active' : True, 'color':None},
             }
-        elif directory == 'lobby':
-            canStart = self.directory == 'lobby' and (self.local or self.hosting) and self.numPlayers > 1
-            canSearch = self.directory == 'lobby' and (self.hosting and self.numPlayers < 4)
-            canAddAI = self.directory == 'lobby' and not self.searching and ((self.local and self.numPlayers < 4) or (self.hosting and self.numPlayers < 4))
-            canKick = self.directory == 'lobby' and ((self.local and self.numPlayers > 1) or (self.hosting and self.numPlayers > 1))
-            canSettings = self.directory == 'lobby' and (self.local or self.hosting)
-            canLeave = self.directory == 'lobby'
+        elif directory == Groups.LOBBY:
+            canStart = self.directory == Groups.LOBBY and (self.local or self.hosting) and self.numPlayers > 1
+            canSearch = self.directory == Groups.LOBBY and (self.hosting and self.numPlayers < 4)
+            canAddAI = self.directory == Groups.LOBBY and not self.searching and ((self.local and self.numPlayers < 4) or (self.hosting and self.numPlayers < 4))
+            canKick = self.directory == Groups.LOBBY and ((self.local and self.numPlayers > 1) or (self.hosting and self.numPlayers > 1))
+            canSettings = self.directory == Groups.LOBBY and (self.local or self.hosting)
+            canLeave = self.directory == Groups.LOBBY
             data = {
-                'buttonStart': {'start': 11, 'length': 32, 'label': 'Start Game', 'active' : canStart, 'color':None},
-                'buttonAddAI': {'start': 5, 'length': 15, 'label': 'Add AI', 'active' : canAddAI, 'color':None},
-                'buttonSearch' : {'start': 4, 'length': 15, 'label': 'Search', 'active' : canSearch, 'color':None},
-                'buttonKick' : {'start': 11, 'length': 32, 'label': 'Kick Player', 'active' : canKick, 'color':None},
-                'buttonClose': {'start': 11, 'length': 32, 'label': 'Close Room', 'active' : canLeave, 'color':None},
-                'buttonSettings': {'start': 12, 'length': 32, 'label': 'Settings', 'active' : canSettings, 'color':None},
+                Elements.BUTTON_START: {'start': 11, 'length': 32, 'label': 'Start Game', 'active' : canStart, 'color':None},
+                Elements.BUTTON_ADD_AI: {'start': 5, 'length': 15, 'label': 'Add AI', 'active' : canAddAI, 'color':None},
+                Elements.BUTTON_SEARCH : {'start': 4, 'length': 15, 'label': 'Search', 'active' : canSearch, 'color':None},
+                Elements.BUTTON_KICK : {'start': 11, 'length': 32, 'label': 'Kick Player', 'active' : canKick, 'color':None},
+                Elements.BUTTON_CLOSE: {'start': 11, 'length': 32, 'label': 'Close Room', 'active' : canLeave, 'color':None},
+                Elements.BUTTON_SETTINGS: {'start': 12, 'length': 32, 'label': 'Settings', 'active' : canSettings, 'color':None},
             }
             if self.searching:
-                data['buttonSearch']['label'] = "Stop Search"
-                data['buttonSearch']['start'] = 2
-        self.ui.updateButtons(data)
+                data[Elements.BUTTON_SEARCH]['label'] = "Stop Search"
+                data[Elements.BUTTON_SEARCH]['start'] = 2
+        self.modifyUI(self.ui.updateButtons, data)
         self.active = []
         for button in UI.BUTTON_GROUPS[directory]:
             self.active.append(data[button]['active'])

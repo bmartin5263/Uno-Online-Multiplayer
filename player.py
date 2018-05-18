@@ -29,7 +29,7 @@ class Player():
         self.hand.discard()
 
     def getString(self):
-        return "('{}',{},'{}'),".format(self.name, self.points, self.type)
+        return "('{}',{},{}),".format(self.name, self.points, self.human)
 
     def removeCard(self, index):
         return self.hand.removeCard(index)
