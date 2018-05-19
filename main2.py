@@ -7,9 +7,10 @@ import logging
 from curses import wrapper
 from ui2 import UI, Groups, Elements
 from player import Player, ComputerPlayer
+from network_util import SocketManager, FixedMessage, Message, Notification
 
 class Game:
-    PORT = 22000
+    PORT = 24600
     MOVEMENT = (curses.KEY_UP, curses.KEY_DOWN, curses.KEY_RIGHT, curses.KEY_LEFT)
     SELECT = (ord(' '), ord('\n'))
     COMPUTER_NAMES = ('Watson', 'SkyNet', 'Hal 9000', 'Metal Gear')
@@ -49,10 +50,6 @@ class Game:
         'Fast': 'Slow'
     }
 
-    LOGGER = logging.getLogger('Game')
-    LOGGER.setLevel(logging.INFO)
-
-
     def __init__(self, stdscreen, name):
         # User Interface
         self.screen = stdscreen
@@ -78,47 +75,18 @@ class Game:
         # Network Sockets
         self.hostSocket = None              # Client Only, socket to the Host
         self.playerSockets = []             # Host Only, list of sockets associated to players in playerStaging
-        self.listeningSocket = None         # Host Only, socket listening for connections
+        #self.listeningSocket = None         # Host Only, socket listening for connections
         self.clientManager = None           # Host Only, collection of sockets
 
         # Hosting Data
         self.searching = False              # Are we searching for players
         self.twirlThread = None             # Thread for updating UI twirls
+        self.readThread = None
 
-        #self.inputDirectory = None
-        #self.gameMode = None
+        # Join Data
+        self.connectedToHost = False
 
-        #self.searching = False
-        #self.abortRoom = False
-        #self.matchQueue = False
-        #self.stayInRoom = False
-        #self.searchThread = None
-        #self.twirlThread = None
-
-        #self.lobbyPointer = -1
-        #self.stagePointer = -1
-        #self.settingsPointer = -1
-        #self.modePointer = -1
-
-        #self.players = []
-        #self.hSockets = []
-        #self.hListenThreads = []
-        #self.hThreadActive = []
-
-        #self.numPlayers = 0
         self.lock = threading.RLock()
-
-        #self.activeButtons = {
-        #    Groups.MODE: [],
-        #    'lobby': [],
-        #    Groups.SETTINGS: [],
-        #}
-
-        #self.pointers = {
-        #    'lobby': self.lobbyPointer,
-        #    Groups.MODE: self.modePointer,
-        #    Groups.SETTINGS: self.settingsPointer
-        #}
 
         _s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         _s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Set Options
@@ -127,8 +95,6 @@ class Game:
             _s.close()
         except OSError:
             self.canHost = False
-
-        logging.debug("Hello World")
 
     @staticmethod
     def createPlayer(name, isHuman, points):
@@ -145,32 +111,52 @@ class Game:
 
     def addPlayer(self, player, sock=None):
         self.playerStaging.append(player)
-        #self.playerSockets.append(sock)
-        #self.hListenThreads.append(None)
-        #self.hThreadActive.append(False)
-        #if sock is not None:
-        #    s.send(self.getPlayerSummary().encode())
-        #    self.titleConsole("Your IP is {}. Welcome {}!".format(self.getIP(), player.name))
-        #    t = threading.Thread(target=self.t_receivePlayerLobby, args=(s,))
-        #    self.hListenThreads[self.numPlayers] = t
-        #    self.hThreadActive[self.numPlayers] = True
-        #    t.start()
+        if not self.local:
+            if self.hosting:
+                self.playerSockets.append(sock)
         self.modifyUI(self.ui.setStageWithPlayer, self.numPlayers, player)
-        self.modifyUI(self.ui.console, "TEST")
+        self.modifyUI(self.ui.console, "Added = {} / {}".format(str(len(self.playerSockets)), str(len(self.playerStaging))))
         self.numPlayers += 1
 
     def beginLocal(self):
         self.addPlayer(self.myPlayer)
 
     def beginHost(self):
-        self.addPlayer(self.myPlayer)
+        self.addPlayer(self.myPlayer, None)
+        self.clientManager = SocketManager.actAsServer(Game.PORT)
+        self.readThread = threading.Thread(target=self.hostReader)
+        self.readThread.start()
+        self.modifyUI(self.ui.console, "Acting as Host")
+
+    def connectToHost(self, address):
+        self.hostSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            self.hostSocket.connect((address, Game.PORT))
+            self.connectedToHost = True
+            payload = Message.compile(Message.GENERAL, type='lobby', action='greeting', data=(self.myPlayer.getSummary(),))
+            greeting = FixedMessage(data=payload)
+            greeting.sendTo(self.hostSocket)
+            self.connectedToHost = True
+            return True
+        except (ConnectionRefusedError, OSError):
+            self.modifyUI(self.ui.modeWarning, "Cannot Connect")
+            return False
 
     def cleanLobby(self):
+        for i in range(self.numPlayers):
+            self.removePlayer(0)
+        self.local = False
+        self.hosting = False
+        self.searching = False
+        self.connectedToHost = False
         if self.twirlThread is not None:
             self.twirlThread.join()
             self.twirlThread = None
-        for i in range(self.numPlayers):
-            self.removePlayer(0)
+        if self.readThread is not None:
+            self.readThread.join()
+            self.readThread = None
+        self.hostSocket = None
+        self.clientManager = None
 
     def enterLobby(self):
         self.modifyUI(self.ui.openGroup, Groups.LOBBY)
@@ -179,6 +165,11 @@ class Game:
 
         if self.local:
             self.beginLocal()
+        else:
+            if self.hosting:
+                self.beginHost()
+            else:
+                self.getLobbyFromHost()
 
         self.pointer = self.getDefaultPointer(Groups.LOBBY)
         self.updateButtons(Groups.LOBBY)
@@ -196,6 +187,11 @@ class Game:
                 self.pressButton(Groups.LOBBY)
                 self.updateButtons(Groups.LOBBY)
                 self.setPointer(Groups.LOBBY, self.pointer, None)
+            if k == -1:
+                if not self.local and not self.hosting:
+                    if not self.connectedToHost:
+                        self.directory = Groups.MODE
+
 
         self.cleanLobby()
         self.updateButtons(Groups.LOBBY)
@@ -280,6 +276,8 @@ class Game:
                     pointer = newPointer
             if k in Game.SELECT:
                 break
+            if k == -1:
+                pass
 
         self.modifyUI(self.ui.setStageWithPlayer, 0, self.myPlayer)
         return pointer
@@ -295,6 +293,40 @@ class Game:
                     return 2
                 else:
                     return 4
+
+    def getHostIP(self):
+        return "localhost"
+
+    def getLobbyFromHost(self):
+        self.playerStaging = []
+        self.settings = []
+        self.modifyUI(self.ui.console, "Waiting for Info")
+        data = eval(FixedMessage.receive(self.hostSocket))
+        self.modifyUI(self.ui.console, "Received Info")
+        if data['type'] == 'lobby':
+            if data['action'] == 'update':
+                playerSummaries = data['data'][0]
+                settings = data['data'][1]
+                self.settings = settings
+                self.ui.updateSettings(self.settings)
+                for tup in playerSummaries:
+                    if tup[2]:
+                        p = Player(tup[0], tup[1])
+                    else:
+                        p = ComputerPlayer(tup[0], tup[1])
+                    self.addPlayer(p)
+        self.readThread = threading.Thread(target=self.clientReader)
+        self.readThread.start()
+
+    def sendLobby(self):
+        data = []
+        playerList = []
+        for player in self.playerStaging:
+            playerList.append(player.getSummary())
+        data.append(playerList)
+        data.append(list(self.settings))
+        payload = Message.compile(Message.GENERAL, type='lobby', action='update', data=data)
+        self.clientManager.writeAll(payload)
 
     def modifyUI(self, func, *args):
         with self.lock:
@@ -313,7 +345,6 @@ class Game:
             if newPointer == 1 and not self.active[1]:
                 newPointer = 2
             elif newPointer == 2 and not self.active[2]:
-                curses.beep()
                 newPointer = 1
             while not self.active[newPointer]:
                 newPointer = moveMap[newPointer][moveNum]
@@ -347,9 +378,12 @@ class Game:
                 self.local = False
                 self.hosting = True
             elif self.pointer == 2:              # Join
-                self.directory = Groups.LOBBY
-                self.local = False
-                self.hosting = False
+                address = self.getHostIP()
+                success = self.connectToHost(address)
+                if success:
+                    self.directory = Groups.LOBBY
+                    self.local = False
+                    self.hosting = False
             elif self.pointer == 3:              # Exit
                 self.gameActive = False
                 self.directory = None
@@ -362,12 +396,15 @@ class Game:
                     if self.numPlayers == 4:
                         self.pointer = self.movePointer(Groups.LOBBY, curses.KEY_DOWN)
             elif self.pointer == 2:              # Search
-                self.searching = not self.searching
-                if self.searching:
-                    self.twirlThread = threading.Thread(target=self.t_twirlSearch)
-                    self.twirlThread.start()
-                else:
-                    self.twirlThread.join()
+                if self.hosting:
+                    self.searching = not self.searching
+                    if self.searching:
+                        self.twirlThread = threading.Thread(target=self.t_twirlSearch)
+                        self.twirlThread.start()
+                        self.clientManager.startListener()
+                    else:
+                        self.clientManager.stopListener()
+                        self.twirlThread.join()
             elif self.pointer == 3:              # Kick
                 if self.numPlayers > 1:
                     num = self.enterStage()
@@ -377,19 +414,31 @@ class Game:
                             self.pointer = self.movePointer(Groups.LOBBY, curses.KEY_UP)
             elif self.pointer == 4:              # Leave
                 self.directory = Groups.MODE
-                self.local = False
-                self.hosting = False
-                self.searching = False
+                if self.connectedToHost:
+                    self.hostSocket.shutdown(socket.SHUT_RDWR)
+                    self.hostSocket.close()
+                elif self.hosting:
+                    self.clientManager.terminateManager()
             elif self.pointer == 5:              # Settings
                 settings = self.enterSettings()
                 if settings != self.settings:
                     self.settings = settings
+                    if self.hosting:
+                        self.sendLobby()
 
     def removePlayer(self, playerNum):
         del self.playerStaging[playerNum]
+        if self.hosting:
+            self.clientManager.removeSocket(self.playerSockets[playerNum])
+            self.modifyUI(self.ui.console, "modifying sockets!")
+            #time.sleep(100)
+            del self.playerSockets[playerNum]
+            self.sendLobby()
         for i, player in enumerate(self.playerStaging):
             self.modifyUI(self.ui.setStageWithPlayer, i, player)
         self.numPlayers -= 1
+        self.modifyUI(self.ui.console,
+                      "Removed = {} / {}".format(str(len(self.playerSockets)), str(len(self.playerStaging))))
         self.modifyUI(self.ui.clearStage, self.numPlayers)
         self.updateButtons(Groups.LOBBY)
 
@@ -398,6 +447,58 @@ class Game:
             self.modifyUI(self.ui.resetButtonPointer, directory, old)
         if pointer is not None:
             self.modifyUI(self.ui.setButtonPointer, directory, pointer)
+
+    def clientReader(self):
+        while True:
+            try:
+                message = eval(FixedMessage.receive(self.hostSocket))
+                if message['type'] == 'lobby':
+                    if message['action'] == 'update':
+                        self.modifyUI(self.ui.clearAllStages)
+                        self.playerStaging = []
+                        self.numPlayers = 0
+                        playerSummaries = message['data'][0]
+                        settings = message['data'][1]
+                        self.settings = settings
+                        self.modifyUI(self.ui.updateSettings, self.settings)
+                        for tup in playerSummaries:
+                            if tup[2]:
+                                p = Player(tup[0], tup[1])
+                            else:
+                                p = ComputerPlayer(tup[0], tup[1])
+                            self.addPlayer(p)
+
+            except socket.timeout:
+                pass
+            except BrokenPipeError:
+                self.connectedToHost = False
+                self.modifyUI(self.ui.warning, "BROKEN PIPE")
+                return
+            except OSError:
+                self.modifyUI(self.ui.warning, "OS ERROR")
+                return
+
+    def hostReader(self):
+        while self.hosting:
+            inbox = self.clientManager.read()
+            for isMessage, sock, message in inbox:
+                if isMessage:
+                    self.modifyUI(self.ui.console, str(message))
+                    #time.sleep(10)
+                    message = eval(message)
+                    self.modifyUI(self.ui.console, "Got a Message!")
+                    if message['type'] == 'lobby':
+                        if message['action'] == 'greeting':
+                            p = Player(message['data'][0][0], message['data'][0][1])
+                            self.addPlayer(p, sock)
+                            self.sendLobby()
+                else:
+                    if message == Notification.CLIENT_DISCONNECTED:
+                        try:
+                            self.removePlayer(self.playerSockets.index(sock))
+                        except ValueError:
+                            pass
+            time.sleep(.1)
 
     def start(self):
         self.gameActive = True
@@ -434,7 +535,7 @@ class Game:
                 Elements.BUTTON_EXIT : { 'start': 14, 'length': 32, 'label': 'Exit', 'active' : True, 'color':None},
             }
         elif directory == Groups.LOBBY:
-            canStart = self.directory == Groups.LOBBY and (self.local or self.hosting) and self.numPlayers > 1
+            canStart = self.directory == Groups.LOBBY and (self.local or (self.hosting and not self.searching)) and self.numPlayers > 1
             canSearch = self.directory == Groups.LOBBY and (self.hosting and self.numPlayers < 4)
             canAddAI = self.directory == Groups.LOBBY and not self.searching and ((self.local and self.numPlayers < 4) or (self.hosting and self.numPlayers < 4))
             canKick = self.directory == Groups.LOBBY and ((self.local and self.numPlayers > 1) or (self.hosting and self.numPlayers > 1))

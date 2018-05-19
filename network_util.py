@@ -1,6 +1,7 @@
 import time
 import socket
 import threading
+import curses
 from enum import Enum
 
 class Notification(Enum):
@@ -10,17 +11,7 @@ class Notification(Enum):
     SOCKET_ADDED = 3
 
 class Message(Enum):
-    # SERVER
-    GET_ROOMS = "dict(type='room', action='get')"
-    SEND_ROOMS = "dict(type='room', action='get', data={data})"
-    NEW_ROOM = "dict(type='room', action='new', canCreate={canCreate}, data='{data}')"
-    GLOBAL_CHAT = "dict(type='chat', data='{data}')"
-    # CHAT ROOM
-    CHAT = "dict(type='room', action='chat', message='{message}')"
-    ROUTE_TO = "dict(type='room', action='route', canRoute={canRoute}, data='{data}')"
-    JOIN_ROOM = "dict(type='room', action='join', canJoin={canJoin}, data='{data}')"
-    ROOM_WELCOME = "dict(type='room' action='welcome', success={success}, isHost={isHost})"
-    ROOM_TERMINATE = "dict(type='room', action='terminate')"
+    GENERAL = "dict(type='{type}', action='{action}', data={data})"
 
     @staticmethod
     def compile(message, **kwargs):
@@ -162,6 +153,7 @@ class SocketManager:
                     self.sockets[group] = []
                     self.inbox[group] = []
         elif action == 'remove':
+            originalSock = sock
             try:
                 group = self.socketMap[sock]
             except KeyError:
@@ -171,7 +163,6 @@ class SocketManager:
                     sock.shutdown(socket.SHUT_RDWR)
                 except OSError:
                     pass
-            address = sock.getsockname()[0]
             try:
                 sock.close()
             except OSError:
@@ -183,9 +174,10 @@ class SocketManager:
             except KeyError:
                 pass
             if self.type == 'client':
-                self.addNotification(Notification.SERVER_DISCONNECTED, (sock, address), group)
+                self.addNotification(Notification.SERVER_DISCONNECTED, (sock,), group)
             else:
-                self.addNotification(Notification.CLIENT_DISCONNECTED, (sock, address), group)
+                if callerID == 'receive':
+                    self.addNotification(Notification.CLIENT_DISCONNECTED, (originalSock,), group)
         elif action == 'group':     # Place Socket into Group
             currentGroup = self.socketMap[sock]
             self.sockets[currentGroup].remove(sock)
@@ -213,7 +205,7 @@ class SocketManager:
                 pass
             except BrokenPipeError:
                 if self.active:
-                    self.removeSocket(sock, 'receive')
+                    self.addNotification(Notification.CLIENT_DISCONNECTED, sock, "default")
                 return
             except OSError:
                 return

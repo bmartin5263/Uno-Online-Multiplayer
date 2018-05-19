@@ -123,6 +123,8 @@ class UI:
             Elements.MAIN : {'window': screen, 'panel': None, 'location': (0,0)},
         }
 
+        self.e[Elements.MAIN]['window'].timeout(60)
+
         curses.curs_set(0)
         curses.init_pair(1, 15, curses.COLOR_BLACK)     # white text
         curses.init_pair(2, 39, curses.COLOR_BLACK)     # blue text
@@ -362,6 +364,15 @@ class UI:
         self._putText(Elements.PLAYER_STAGE_0, 1, 1, UI.blank(32))
         self._putText(Elements.PLAYER_STAGE_0, 1, 2, UI.blank(32))
         self._putText(Elements.PLAYER_STAGE_0, 1, 1, "Cancel")
+        curses.doupdate()
+
+    def clearAllStages(self):
+        for i in range(4):
+            stage = UI.STAGES[i]
+            self._colorElement(stage, Colors.GRAY)
+            self._putText(stage, 1, 1, UI.blank(32))
+            self._putText(stage, 1, 2, UI.blank(32))
+            self._putText(stage, 1, 1, "No Player", Colors.GRAY)
         curses.doupdate()
 
     def clearStage(self, num):
