@@ -49,6 +49,8 @@ class Colors(Enum):
 
 class UI:
 
+    IGNORE_INPUT = (127, 260, 259, 261, 258)
+
     ELEMENT_DEFAULTS = {
         Elements.TITLE : {'border': 'box', 'tether': None, 'color': Colors.WHITE, 'location': (0, 0), 'dimensions': (70, 7)},
         Elements.WINDOW_MODE: {'border': 'box', 'tether': None, 'color': Colors.WHITE, 'location': (17, 7), 'dimensions': (36, 21)},
@@ -309,6 +311,35 @@ class UI:
             self._putText(Elements.WINDOW_MODE, 1, 6, text, color)
         curses.doupdate()
 
+    def _getLineText(self, element, x, y, length):
+        """Get a Line of Text From an Element"""
+        curses.curs_set(1)
+        window = self.e[element]['window']
+        window.move(y, x)
+        window.refresh()
+        text = []
+        self.e[Elements.MAIN]['window'].timeout(-1)
+        c = self.getInput()
+        while chr(c) != '\n':
+            if c not in UI.IGNORE_INPUT and len(text) < length:
+                text.append(chr(c))
+            elif c == 127 and len(text) > 0:
+                text.pop()
+            for i, character in enumerate(text):
+                self._putChar(element, x + i, y, character)
+            window.move(y, x+len(text))
+            window.refresh()
+            c = self.getInput()
+            self._putText(element, x, y, UI.blank(length))
+        curses.curs_set(0)
+        text = ''.join(text)
+        self._putText(element, x, y, UI.blank(length))
+        if text is '' or text.replace(' ','') is '':
+            self.e[Elements.MAIN]['window'].timeout(60)
+            return False, ''
+        self.e[Elements.MAIN]['window'].timeout(60)
+        return True, text
+
     def _highlightButton(self, button, color):
         """Colors a button yellow."""
         self._colorElement(button, color)
@@ -396,6 +427,21 @@ class UI:
         """Print a yellow message to game's console"""
         self._console(True, message, False)
 
+    def getIPJoinButton(self):
+        data = {
+            Elements.BUTTON_JOIN: {'start': 0, 'length': 32, 'label': 'Host IP:', 'active': True,
+                                   'color': Colors.RED},
+        }
+        self.updateButtons(data)
+        return self._getLineText(Elements.BUTTON_JOIN, 10, 1, 16)
+
+    def joinButtonConnecting(self):
+        data = {
+            Elements.BUTTON_JOIN: {'start': 10, 'length': 32, 'label': 'Connecting', 'active': True,
+                                   'color': Colors.RED},
+        }
+        self.updateButtons(data)
+
     def modeConsole(self, message):
         self._console(False, message, False)
 
@@ -438,6 +484,14 @@ class UI:
     def pressSettings(self):
         self._highlightButton(Elements.BUTTON_SETTINGS, Colors.GREEN)
 
+    def restoreJoinButton(self):
+        curses.beep()
+        data = {
+            Elements.BUTTON_JOIN: {'start': 8, 'length': 32, 'label': 'Join Multiplayer', 'active': True,
+                                   'color': Colors.YELLOW},
+        }
+        self.updateButtons(data)
+
     def restoreSettings(self):
         self._highlightButton(Elements.BUTTON_SETTINGS, Colors.YELLOW)
 
@@ -463,6 +517,12 @@ class UI:
         self._putText(stage, 1, 2, UI.blank(32))
         self._putText(stage, 1, 2, 'Points: {}'.format(str(player.points)))
         curses.doupdate()
+
+    def twirlConnect(self, i):
+        self._putChar(Elements.BUTTON_JOIN, 22, 1, ' ', Colors.RED)
+        if i is not None:
+            ch = UI.TWIRL[i]
+            self._putChar(Elements.BUTTON_JOIN, 22, 1, ch, Colors.RED)
 
     def twirlSearch(self, num, i):
         stage = UI.STAGES[num]
