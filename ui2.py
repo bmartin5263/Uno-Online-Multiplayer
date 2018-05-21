@@ -459,6 +459,7 @@ class UI:
     def searchStage(self, num):
         """Set stage to for searching. Does not update"""
         stageName = UI.STAGES[num]
+        self._colorElement(stageName, Colors.GRAY)
         self._putText(stageName, 1, 1, UI.blank(32))
         self._putText(stageName, 1, 2, UI.blank(32))
         self._putText(stageName, 1, 1, "Searching", Colors.GRAY)
@@ -485,7 +486,6 @@ class UI:
         self._highlightButton(Elements.BUTTON_SETTINGS, Colors.GREEN)
 
     def restoreJoinButton(self):
-        curses.beep()
         data = {
             Elements.BUTTON_JOIN: {'start': 8, 'length': 32, 'label': 'Join Multiplayer', 'active': True,
                                    'color': Colors.YELLOW},

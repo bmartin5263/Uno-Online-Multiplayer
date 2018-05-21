@@ -117,13 +117,13 @@ class Game:
         self.addPlayer(p)
 
     def addPlayer(self, player, sock=None):
+        self.numPlayers += 1
         self.playerStaging.append(player)
         if not self.local:
             if self.hosting:
                 self.playerSockets.append(sock)
-        self.modifyUI(self.ui.setStageWithPlayer, self.numPlayers, player)
+        self.modifyUI(self.ui.setStageWithPlayer, self.numPlayers-1, player)
         self.modifyUI(self.ui.console, "Added = {} / {}".format(str(len(self.playerSockets)), str(len(self.playerStaging))))
-        self.numPlayers += 1
 
     def beginLocal(self):
         self.addPlayer(self.myPlayer)
@@ -140,9 +140,8 @@ class Game:
         self.modifyUI(self.ui.joinButtonConnecting)
         twirlThread = threading.Thread(target=self.t_twirlConnect)
         twirlThread.start()
-        #time.sleep(1)
         self.hostSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.hostSocket.settimeout(1)
+        self.hostSocket.settimeout(10)
         try:
             self.hostSocket.connect((address, Game.PORT))
             self.connectedToHost = True
@@ -353,6 +352,12 @@ class Game:
         data.append(list(self.settings))
         payload = Message.compile(Message.GENERAL, type='lobby', action='update', data=data)
         self.clientManager.writeAll(payload)
+        if self.searching:
+            payload = Message.compile(Message.GENERAL, type='lobby', action='search', data=True)
+            self.clientManager.writeAll(payload)
+        else:
+            payload = Message.compile(Message.GENERAL, type='lobby', action='search', data=False)
+            self.clientManager.writeAll(payload)
 
     def modifyUI(self, func, *args):
         with self.lock:
@@ -430,8 +435,12 @@ class Game:
                 if self.hosting:
                     if not self.searching:
                         self.startSearching()
+                        payload = Message.compile(Message.GENERAL, type='lobby', action='search', data=True)
+                        self.clientManager.writeAll(payload)
                     else:
                         self.stopSearching()
+                        payload = Message.compile(Message.GENERAL, type='lobby', action='search', data=False)
+                        self.clientManager.writeAll(payload)
             elif self.pointers[directory] == 3:              # Kick
                 if self.numPlayers > 1:
                     num = self.enterStage()
@@ -459,7 +468,6 @@ class Game:
             if self.hosting:
                 self.clientManager.removeSocket(self.playerSockets[playerNum])
                 self.modifyUI(self.ui.console, "modifying sockets!")
-                #time.sleep(100)
                 del self.playerSockets[playerNum]
                 self.sendLobby()
             for i, player in enumerate(self.playerStaging):
@@ -467,18 +475,25 @@ class Game:
             self.numPlayers -= 1
             self.modifyUI(self.ui.console,
                           "Removed = {} / {}".format(str(len(self.playerSockets)), str(len(self.playerStaging))))
-            self.modifyUI(self.ui.clearStage, self.numPlayers)
+            if self.searching:
+                self.modifyUI(self.ui.searchStage, self.numPlayers)
+            else:
+                self.modifyUI(self.ui.clearStage, self.numPlayers)
 
     def startSearching(self, interfaceOnly=False):
-        self.searching = True
-        self.twirlThread = threading.Thread(target=self.t_twirlSearch)
-        self.twirlThread.start()
-        self.clientManager.startListener()
+        if not self.searching:
+            self.searching = True
+            self.twirlThread = threading.Thread(target=self.t_twirlSearch)
+            self.twirlThread.start()
+            if not interfaceOnly:
+                self.clientManager.startListener()
 
     def stopSearching(self, interfaceOnly=False):
-        self.searching = False
-        self.clientManager.stopListener()
-        self.twirlThread.join()
+        if self.searching:
+            self.searching = False
+            if not interfaceOnly:
+                self.clientManager.stopListener()
+            self.twirlThread.join()
 
     def setPointer(self, directory, pointer, old):
         if old is not None:
@@ -505,11 +520,11 @@ class Game:
                             else:
                                 p = ComputerPlayer(tup[0], tup[1])
                             self.addPlayer(p)
-                    if message['action'] == 'search':
+                    elif message['action'] == 'search':
                         if message['data']:
-                            pass
+                            self.startSearching(True)
                         else:
-                            pass
+                            self.stopSearching(True)
 
             except socket.timeout:
                 pass
@@ -527,7 +542,6 @@ class Game:
             for isMessage, sock, message in inbox:
                 if isMessage:
                     self.modifyUI(self.ui.console, str(message))
-                    #time.sleep(10)
                     message = eval(message)
                     self.modifyUI(self.ui.console, "Got a Message!")
                     if message['type'] == 'lobby':

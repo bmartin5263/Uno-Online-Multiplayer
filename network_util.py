@@ -343,7 +343,7 @@ class FixedMessage:
             packet = s.recv(FixedMessage.MESSAGE_LENGTH).decode()
             if not packet:
                 raise BrokenPipeError
-            s.settimeout(5.0)
+            s.settimeout(10.0)
             while packet[FixedMessage.MESSAGE_LENGTH - 1] == FixedMessage.DELIMITER:
                 output += packet[:FixedMessage.MESSAGE_LENGTH - 1]
                 packet = s.recv(FixedMessage.MESSAGE_LENGTH).decode()
