@@ -2,6 +2,9 @@ import curses
 import curses.panel
 from enum import Enum
 
+import time
+
+
 class Elements(Enum):
     MAIN = 0
     TITLE = 1
@@ -48,6 +51,17 @@ class Colors(Enum):
     DEEP_RED = 7
 
 class UI:
+
+    # Redefined to Lower Number of Warnings
+    ACS_VLINE = curses.ACS_VLINE
+    ACS_HLINE = curses.ACS_HLINE
+    ACS_RTEE = curses.ACS_RTEE
+    ACS_LTEE = curses.ACS_LTEE
+    ACS_URCORNER = curses.ACS_URCORNER
+    ACS_ULCORNER = curses.ACS_ULCORNER
+    ACS_LLCORNER = curses.ACS_LLCORNER
+    ACS_LRCORNER = curses.ACS_LRCORNER
+
 
     IGNORE_INPUT = (127, 260, 259, 261, 258)
 
@@ -125,7 +139,7 @@ class UI:
             Elements.MAIN : {'window': screen, 'panel': None, 'location': (0,0)},
         }
 
-        self.e[Elements.MAIN]['window'].timeout(60)
+        self.e[Elements.MAIN]['window'].timeout(600)
 
         curses.curs_set(0)
         curses.init_pair(1, 15, curses.COLOR_BLACK)     # white text
@@ -202,17 +216,17 @@ class UI:
             window.attrset(self.TEXT_COLORS[color])
         if border == 'box':
             if element == Elements.TITLE:
-                window.border(curses.ACS_VLINE, curses.ACS_VLINE, curses.ACS_HLINE, curses.ACS_HLINE,
-                              curses.ACS_ULCORNER,
-                              curses.ACS_URCORNER, curses.ACS_LTEE, curses.ACS_RTEE)
+                window.border(UI.ACS_VLINE, UI.ACS_VLINE, UI.ACS_HLINE, UI.ACS_HLINE,
+                              UI.ACS_ULCORNER,
+                              UI.ACS_URCORNER, UI.ACS_LTEE, UI.ACS_RTEE)
             elif element in (Elements.WINDOW_LOBBY, Elements.WINDOW_HAND):
-                window.border(curses.ACS_VLINE, curses.ACS_VLINE, curses.ACS_HLINE, curses.ACS_HLINE,
-                              curses.ACS_LTEE,
-                              curses.ACS_RTEE, curses.ACS_LLCORNER, curses.ACS_LRCORNER)
+                window.border(UI.ACS_VLINE, UI.ACS_VLINE, UI.ACS_HLINE, UI.ACS_HLINE,
+                              UI.ACS_LTEE,
+                              UI.ACS_RTEE, UI.ACS_LLCORNER, UI.ACS_LRCORNER)
             elif element == Elements.WINDOW_MATCH:
-                window.border(curses.ACS_VLINE, curses.ACS_VLINE, curses.ACS_HLINE, curses.ACS_HLINE,
-                              curses.ACS_LTEE,
-                              curses.ACS_RTEE, curses.ACS_LTEE, curses.ACS_RTEE)
+                window.border(UI.ACS_VLINE, UI.ACS_VLINE, UI.ACS_HLINE, UI.ACS_HLINE,
+                              UI.ACS_LTEE,
+                              UI.ACS_RTEE, UI.ACS_LTEE, UI.ACS_RTEE)
             else:
                 window.box()
         panel = curses.panel.new_panel(window)
@@ -239,16 +253,16 @@ class UI:
         self._putText(Elements.TITLE, 25, 3, "\\\\ //", Colors.BLUE)
         self._putText(Elements.TITLE, 31, 3, "|| \\||", Colors.GREEN)
         self._putText(Elements.TITLE, 39, 3, "\\\\ //", Colors.RED)
-        self._putChar(Elements.TITLE, 0, 4, curses.ACS_LTEE, Colors.WHITE)
+        self._putChar(Elements.TITLE, 0, 4, UI.ACS_LTEE, Colors.WHITE)
 
         for i in range(1, 69):
-            self._putChar(Elements.TITLE, i, 4, curses.ACS_HLINE, Colors.WHITE)
-        self._putChar(Elements.TITLE, 69, 4, curses.ACS_RTEE, Colors.WHITE)
+            self._putChar(Elements.TITLE, i, 4, UI.ACS_HLINE, Colors.WHITE)
+        self._putChar(Elements.TITLE, 69, 4, UI.ACS_RTEE, Colors.WHITE)
 
-        self._putChar(Elements.WINDOW_LOBBY, 0, 9, curses.ACS_LTEE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_LOBBY, 0, 9, UI.ACS_LTEE, Colors.WHITE)
         for i in range(1, 69):
-            self._putChar(Elements.WINDOW_LOBBY, i, 9, curses.ACS_HLINE, Colors.WHITE)
-        self._putChar(Elements.WINDOW_LOBBY, 69, 9, curses.ACS_RTEE, Colors.WHITE)
+            self._putChar(Elements.WINDOW_LOBBY, i, 9, UI.ACS_HLINE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_LOBBY, 69, 9, UI.ACS_RTEE, Colors.WHITE)
 
         """
         self.putChar('handWindow', 0, 2, curses.ACS_LTEE, Colors.WHITE, False)
@@ -257,19 +271,19 @@ class UI:
         self.putChar('handWindow', 69, 2, curses.ACS_RTEE, Colors.WHITE, True)
         """
 
-        self._putChar(Elements.WINDOW_MODE, 0, 5, curses.ACS_LTEE, Colors.WHITE)
-        self._putChar(Elements.WINDOW_MODE, 0, 7, curses.ACS_LTEE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_MODE, 0, 5, UI.ACS_LTEE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_MODE, 0, 7, UI.ACS_LTEE, Colors.WHITE)
         for i in range(1, 35):
-            self._putChar(Elements.WINDOW_MODE, i, 5, curses.ACS_HLINE, Colors.WHITE)
-            self._putChar(Elements.WINDOW_MODE, i, 7, curses.ACS_HLINE, Colors.WHITE)
-        self._putChar(Elements.WINDOW_MODE, 35, 5, curses.ACS_RTEE, Colors.WHITE)
-        self._putChar(Elements.WINDOW_MODE, 0, 7, curses.ACS_LTEE, Colors.WHITE)
+            self._putChar(Elements.WINDOW_MODE, i, 5, UI.ACS_HLINE, Colors.WHITE)
+            self._putChar(Elements.WINDOW_MODE, i, 7, UI.ACS_HLINE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_MODE, 35, 5, UI.ACS_RTEE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_MODE, 0, 7, UI.ACS_LTEE, Colors.WHITE)
 
         self._putText(Elements.WINDOW_SETTINGS, 13, 1, "Settings", Colors.WHITE)
-        self._putChar(Elements.WINDOW_SETTINGS, 0, 2, curses.ACS_LTEE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_SETTINGS, 0, 2, UI.ACS_LTEE, Colors.WHITE)
         for i in range(1, 33):
-            self._putChar(Elements.WINDOW_SETTINGS, i, 2, curses.ACS_HLINE, Colors.WHITE)
-        self._putChar(Elements.WINDOW_SETTINGS, 33, 2, curses.ACS_RTEE, Colors.WHITE)
+            self._putChar(Elements.WINDOW_SETTINGS, i, 2, UI.ACS_HLINE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_SETTINGS, 33, 2, UI.ACS_RTEE, Colors.WHITE)
 
         data = {
             Elements.BUTTON_START: {'start': 11, 'length': 32, 'label': 'Start Game', 'active': False, 'color': None},
@@ -287,7 +301,18 @@ class UI:
             Elements.BUTTON_DOES_NOTHING : {'start': 0, 'length': 32, 'label': '- Does Nothing', 'active': False, 'color': None},
         }
 
+        mdata = {
+            Elements.BUTTON_HOST: {'start': 8, 'length': 32, 'label': 'Host Multiplayer', 'active': False,
+                                   'color': None},
+            Elements.BUTTON_JOIN: {'start': 8, 'length': 32, 'label': 'Join Multiplayer', 'active': False,
+                                   'color': None},
+            Elements.BUTTON_LOCAL: {'start': 7, 'length': 32, 'label': 'Local Singleplayer', 'active': False,
+                                    'color': None},
+            Elements.BUTTON_EXIT: {'start': 14, 'length': 32, 'label': 'Exit', 'active': False, 'color': None},
+        }
+
         self.updateButtons(data)
+        self.updateButtons(mdata)
         self.updateSettingButtons(sdata)
         self.updateSettings([True, 'Normal', False, False])
 
@@ -335,19 +360,14 @@ class UI:
         text = ''.join(text)
         self._putText(element, x, y, UI.blank(length))
         if text is '' or text.replace(' ','') is '':
-            self.e[Elements.MAIN]['window'].timeout(60)
+            self.e[Elements.MAIN]['window'].timeout(600)
             return False, ''
-        self.e[Elements.MAIN]['window'].timeout(60)
+        self.e[Elements.MAIN]['window'].timeout(600)
         return True, text
 
     def _highlightButton(self, button, color):
         """Colors a button yellow."""
         self._colorElement(button, color)
-        curses.doupdate()
-
-    def _restoreButton(self, button):
-        """Restore the color of a button to its default."""
-        self._colorElement(button, None)
         curses.doupdate()
 
     def _lowerCard(self, index):
@@ -381,6 +401,11 @@ class UI:
 
     def _raiseCard(self, index):
         """Raise Card, Setting its Border to White"""
+
+    def _restoreButton(self, button):
+        """Restore the color of a button to its default."""
+        self._colorElement(button, None)
+        curses.doupdate()
 
     def _twirlSearch(self, num, phase):
         """Spins search wheel at specified stage using current phase char"""
@@ -435,6 +460,11 @@ class UI:
         self.updateButtons(data)
         return self._getLineText(Elements.BUTTON_JOIN, 10, 1, 16)
 
+    def getNameFromMainStage(self):
+        self.clearStage(-1)
+        self._putText(Elements.MAIN_STAGE, 1, 1, UI.blank(32))
+        return self._getLineText(Elements.MAIN_STAGE, 1, 1, 12)
+
     def joinButtonConnecting(self):
         data = {
             Elements.BUTTON_JOIN: {'start': 10, 'length': 32, 'label': 'Connecting', 'active': True,
@@ -452,6 +482,9 @@ class UI:
         for element in UI.GROUPS[group]:
             self.e[element]['panel'].show()
         UI._updatePanels()
+
+    def pressSettings(self):
+        self._highlightButton(Elements.BUTTON_SETTINGS, Colors.GREEN)
 
     def resetButtonPointer(self, directory, num):
         self._restoreButton(UI.BUTTON_GROUPS[directory][num])
@@ -481,9 +514,6 @@ class UI:
 
     def showHand(self, offset):
         """Show the hand at the offset provided"""
-
-    def pressSettings(self):
-        self._highlightButton(Elements.BUTTON_SETTINGS, Colors.GREEN)
 
     def restoreJoinButton(self):
         data = {

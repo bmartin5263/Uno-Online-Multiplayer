@@ -3,7 +3,6 @@ import time
 import socket
 import threading
 import curses
-import logging
 from curses import wrapper
 from ui2 import UI, Groups, Elements
 from player import Player, ComputerPlayer
@@ -66,7 +65,11 @@ class Game:
         }
 
         # Local Data
-        self.myPlayer = Game.createPlayer(name, True, 0)
+        if name != '':
+            self.myPlayer = Game.createPlayer(name, True, 0)
+        else:
+            self.myPlayer = None
+
         self.gameActive = False          # Exit Program?
         self.canHost = True             # Do you have a network connection?
         self.directory = Groups.MODE
@@ -115,6 +118,8 @@ class Game:
         name = Game.COMPUTER_NAMES[self.numPlayers]
         p = Game.createPlayer(name, False, 0)
         self.addPlayer(p)
+        if self.hosting:
+            self.sendLobby()
 
     def addPlayer(self, player, sock=None):
         self.numPlayers += 1
@@ -123,7 +128,12 @@ class Game:
             if self.hosting:
                 self.playerSockets.append(sock)
         self.modifyUI(self.ui.setStageWithPlayer, self.numPlayers-1, player)
-        self.modifyUI(self.ui.console, "Added = {} / {}".format(str(len(self.playerSockets)), str(len(self.playerStaging))))
+        #self.modifyUI(self.ui.console, "Added = {} / {}".format(str(len(self.playerSockets)), str(len(self.playerStaging))))
+        if self.hosting:
+            if self.searching:
+                self.modifyUI(self.ui.console, "Your IP is {}. Welcome {}!".format(Game.getIP(), player.name))
+            else:
+                self.modifyUI(self.ui.console, "Welcome {}!".format(player.name))
 
     def beginLocal(self):
         self.addPlayer(self.myPlayer)
@@ -133,7 +143,7 @@ class Game:
         self.clientManager = SocketManager.actAsServer(Game.PORT)
         self.readThread = threading.Thread(target=self.hostReader)
         self.readThread.start()
-        self.modifyUI(self.ui.console, "Acting as Host")
+        self.modifyUI(self.ui.console, "Press Search to Find Players")
 
     def connectToHost(self, address):
         self.tryingToConnect = True
@@ -178,6 +188,7 @@ class Game:
             self.readThread = None
         self.hostSocket = None
         self.clientManager = None
+        self.modifyUI(self.ui.console, "")
 
     def enterLobby(self):
         self.modifyUI(self.ui.openGroup, Groups.LOBBY)
@@ -197,7 +208,10 @@ class Game:
         self.setPointer(Groups.LOBBY, self.pointers[Groups.LOBBY], None)
         while self.directory == Groups.LOBBY:
 
-            k = self.ui.getInput()
+            try:
+                k = self.ui.getInput()
+            except KeyboardInterrupt:
+                self.directory = Groups.MODE
 
             if k in Game.MOVEMENT:
                 newPointer = self.movePointer(Groups.LOBBY, k)
@@ -210,6 +224,7 @@ class Game:
                 self.setPointer(Groups.LOBBY, self.pointers[Groups.LOBBY], None)
             if k == -1:
                 if not self.local and not self.hosting:
+                    self.pingHost()
                     if not self.connectedToHost:
                         self.directory = Groups.MODE
 
@@ -223,6 +238,15 @@ class Game:
         self.modifyUI(self.ui.openGroup, Groups.LOBBY)
         self.modifyUI(self.ui.openGroup, Groups.SETTINGS)
         self.modifyUI(self.ui.openGroup, Groups.MODE)
+
+        if not self.myPlayer:
+            self.modifyUI(self.ui.modeConsole, "Please Enter Your Name")
+            name = self.getPlayerName()
+            while name == "":
+                name = self.getPlayerName()
+            self.myPlayer = Game.createPlayer(name, True, 0)
+
+        self.modifyUI(self.ui.setStageWithPlayer, -1, self.myPlayer)
 
         self.modifyUI(self.ui.modeConsole, "Welcome to Uno! Select a Mode")
 
@@ -300,6 +324,7 @@ class Game:
             if k == -1:
                 pass
 
+
         self.modifyUI(self.ui.setStageWithPlayer, 0, self.myPlayer)
         return pointer
 
@@ -322,12 +347,17 @@ class Game:
         else:
             return "localhost"
 
+    def getPlayerName(self):
+        success, text = self.ui.getNameFromMainStage()
+        while not success:
+            success, text = self.ui.getNameFromMainStage()
+        return text
+
     def getLobbyFromHost(self):
         self.playerStaging = []
         self.settings = []
-        self.modifyUI(self.ui.console, "Waiting for Info")
         data = eval(FixedMessage.receive(self.hostSocket))
-        self.modifyUI(self.ui.console, "Received Info")
+        self.modifyUI(self.ui.console, "Joined Lobby, Waiting for Host To Start Game")
         if data['type'] == 'lobby':
             if data['action'] == 'update':
                 playerSummaries = data['data'][0]
@@ -342,6 +372,14 @@ class Game:
                     self.addPlayer(p)
         self.readThread = threading.Thread(target=self.clientReader)
         self.readThread.start()
+
+    @staticmethod
+    def getIP():
+        try:
+            ip = socket.gethostbyname(socket.gethostname())
+        except socket.gaierror:
+            ip = "Unknown"
+        return ip
 
     def sendLobby(self):
         data = []
@@ -358,6 +396,10 @@ class Game:
         else:
             payload = Message.compile(Message.GENERAL, type='lobby', action='search', data=False)
             self.clientManager.writeAll(payload)
+
+    def sendMessage(self, message, exclude):
+        payload = Message.compile(Message.GENERAL, type='lobby', action='message', data=(message,))
+        self.clientManager.writeAll(payload, exclude)
 
     def modifyUI(self, func, *args):
         with self.lock:
@@ -401,6 +443,15 @@ class Game:
         moveMap = Game.MOVEMENT_MAPS[Groups.SETTINGS]
         newPointer = moveMap[pointer][moveNum]
         return newPointer
+
+    def pingHost(self):
+        #curses.flash()
+        try:
+            ping = Message.compile(Message.GENERAL, type='ping', action='ping', data=("ping",))
+            greeting = FixedMessage(data=ping)
+            greeting.sendTo(self.hostSocket)
+        except OSError:
+            self.connectedToHost = False
 
     def pressButton(self, directory):
         if directory == Groups.MODE:
@@ -467,14 +518,13 @@ class Game:
             del self.playerStaging[playerNum]
             if self.hosting:
                 self.clientManager.removeSocket(self.playerSockets[playerNum])
-                self.modifyUI(self.ui.console, "modifying sockets!")
                 del self.playerSockets[playerNum]
                 self.sendLobby()
             for i, player in enumerate(self.playerStaging):
                 self.modifyUI(self.ui.setStageWithPlayer, i, player)
             self.numPlayers -= 1
-            self.modifyUI(self.ui.console,
-                          "Removed = {} / {}".format(str(len(self.playerSockets)), str(len(self.playerStaging))))
+            #self.modifyUI(self.ui.console,
+            #              "Removed = {} / {}".format(str(len(self.playerSockets)), str(len(self.playerStaging))))
             if self.searching:
                 self.modifyUI(self.ui.searchStage, self.numPlayers)
             else:
@@ -486,6 +536,7 @@ class Game:
             self.twirlThread = threading.Thread(target=self.t_twirlSearch)
             self.twirlThread.start()
             if not interfaceOnly:
+                self.modifyUI(self.ui.console,  "Your IP is {}. Searching for Players...".format(Game.getIP()))
                 self.clientManager.startListener()
 
     def stopSearching(self, interfaceOnly=False):
@@ -525,15 +576,17 @@ class Game:
                             self.startSearching(True)
                         else:
                             self.stopSearching(True)
+                    elif message['action'] == 'message':
+                        self.modifyUI(self.ui.console, message['data'][0])
 
             except socket.timeout:
                 pass
             except BrokenPipeError:
                 self.connectedToHost = False
-                self.modifyUI(self.ui.warning, "BROKEN PIPE")
+                #self.modifyUI(self.ui.warning, "BROKEN PIPE")
                 return
             except OSError:
-                self.modifyUI(self.ui.warning, "OS ERROR")
+                #self.modifyUI(self.ui.warning, "OS ERROR")
                 return
 
     def hostReader(self):
@@ -541,14 +594,15 @@ class Game:
             inbox = self.clientManager.read()
             for isMessage, sock, message in inbox:
                 if isMessage:
-                    self.modifyUI(self.ui.console, str(message))
+                    #self.modifyUI(self.ui.console, str(message))
                     message = eval(message)
-                    self.modifyUI(self.ui.console, "Got a Message!")
+                    #self.modifyUI(self.ui.console, "Got a Message!")
                     if message['type'] == 'lobby':
                         if message['action'] == 'greeting':
                             p = Player(message['data'][0][0], message['data'][0][1])
                             self.addPlayer(p, sock)
                             self.sendLobby()
+                            self.sendMessage("Welcome {}!".format(p.name), [sock])
                             if self.numPlayers >= 4 and self.searching:
                                 self.stopSearching()
                                 self.updateButtons(Groups.LOBBY)
@@ -565,7 +619,6 @@ class Game:
     def start(self):
         self.gameActive = True
         self.directory = Groups.MODE
-        self.modifyUI(self.ui.setStageWithPlayer, -1, self.myPlayer)
         while self.gameActive:
             if self.directory == Groups.MODE:
                 self.enterMode()
@@ -620,6 +673,8 @@ class Game:
                 Elements.BUTTON_CLOSE: {'start': 11, 'length': 32, 'label': 'Close Room', 'active' : canLeave, 'color':None},
                 Elements.BUTTON_SETTINGS: {'start': 12, 'length': 32, 'label': 'Settings', 'active' : canSettings, 'color':None},
             }
+            if not self.local and not self.hosting:
+                data[Elements.BUTTON_CLOSE]['label'] = "Leave Room"
             if self.searching:
                 data[Elements.BUTTON_SEARCH]['label'] = "Stop Search"
                 data[Elements.BUTTON_SEARCH]['start'] = 2
@@ -647,13 +702,11 @@ def program():
         else:
             name = name[0:12]
     except IndexError:
-        print("Error, Please Provide a Name")
-        exit()
+        pass
     sys.stdout.write("\x1b[8;33;70t")
     sys.stdout.flush()
     time.sleep(.05)
     # ui = UI(None, 'elements.txt')
-    logging.basicConfig(filename='example.log', level=logging.DEBUG)
     wrapper(main, name)
 
 if __name__ == '__main__':
