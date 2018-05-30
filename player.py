@@ -1,4 +1,4 @@
-#from uno_objs import Hand
+from uno_objs import Hand
 
 class Player():
 
@@ -6,7 +6,7 @@ class Player():
         self.name = name
         self.id = -1
         self.human = True
-        #self.hand = Hand()
+        self.hand = Hand()
         self.forceDraw = 0
         self.points = points
 
@@ -18,9 +18,6 @@ class Player():
     def addPoints(self, amount):
         if (self.points + amount) <= 999999999999999999999:
             self.points += amount
-
-    def assignID(self, identity):
-        self.id = identity
 
     def checkCard(self, index):
         return self.hand.getCard(int(index))

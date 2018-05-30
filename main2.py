@@ -7,6 +7,7 @@ from curses import wrapper
 from ui2 import UI, Groups, Elements
 from player import Player, ComputerPlayer
 from network_util import SocketManager, FixedMessage, Message, Notification
+from match import Match, Modes
 
 class Game:
     PORT = 24600
@@ -58,10 +59,12 @@ class Game:
         self.pointers = {
             Groups.LOBBY : -1,
             Groups.MODE : -1,
+            Groups.STAGE : -1
         }
         self.actives = {
             Groups.LOBBY : [],
-            Groups.MODE : []
+            Groups.MODE : [],
+            Groups.STAGE : []
         }
 
         # Local Data
@@ -80,6 +83,7 @@ class Game:
         self.settings = [True, 'Normal', False, False]
         self.playerStaging = []
         self.numPlayers = 0
+        self.enterMatch = False
 
         # Network Sockets
         self.hostSocket = None              # Client Only, socket to the Host
@@ -122,18 +126,19 @@ class Game:
             self.sendLobby()
 
     def addPlayer(self, player, sock=None):
-        self.numPlayers += 1
-        self.playerStaging.append(player)
-        if not self.local:
+        with self.lock:
+            self.numPlayers += 1
+            self.playerStaging.append(player)
+            if not self.local:
+                if self.hosting:
+                    self.playerSockets.append(sock)
+            self.sync(self.ui.setStageWithPlayer, self.numPlayers - 1, player)
+            #self.modifyUI(self.ui.console, "Added = {} / {}".format(str(len(self.playerSockets)), str(len(self.playerStaging))))
             if self.hosting:
-                self.playerSockets.append(sock)
-        self.modifyUI(self.ui.setStageWithPlayer, self.numPlayers-1, player)
-        #self.modifyUI(self.ui.console, "Added = {} / {}".format(str(len(self.playerSockets)), str(len(self.playerStaging))))
-        if self.hosting:
-            if self.searching:
-                self.modifyUI(self.ui.console, "Your IP is {}. Welcome {}!".format(Game.getIP(), player.name))
-            else:
-                self.modifyUI(self.ui.console, "Welcome {}!".format(player.name))
+                if self.searching:
+                    self.sync(self.ui.console, "Your IP is {}. Welcome {}!".format(Game.getIP(), player.name))
+                else:
+                    self.sync(self.ui.console, "Welcome {}!".format(player.name))
 
     def beginLocal(self):
         self.addPlayer(self.myPlayer)
@@ -143,11 +148,11 @@ class Game:
         self.clientManager = SocketManager.actAsServer(Game.PORT)
         self.readThread = threading.Thread(target=self.hostReader)
         self.readThread.start()
-        self.modifyUI(self.ui.console, "Press Search to Find Players")
+        self.sync(self.ui.console, "Press Search to Find Players")
 
     def connectToHost(self, address):
         self.tryingToConnect = True
-        self.modifyUI(self.ui.joinButtonConnecting)
+        self.sync(self.ui.joinButtonConnecting)
         twirlThread = threading.Thread(target=self.t_twirlConnect)
         twirlThread.start()
         self.hostSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -161,13 +166,13 @@ class Game:
             self.connectedToHost = True
             return True
         except socket.timeout:
-            self.modifyUI(self.ui.modeWarning, "Connection Timed Out")
+            self.sync(self.ui.modeWarning, "Connection Timed Out")
             return False
         except (ConnectionRefusedError, OSError):
-            self.modifyUI(self.ui.modeWarning, "Could Not Connect To Host IP")
+            self.sync(self.ui.modeWarning, "Could Not Connect To Host IP")
             return False
         except KeyboardInterrupt:
-            self.modifyUI(self.ui.modeWarning, "Connection Interrupted")
+            self.sync(self.ui.modeWarning, "Connection Interrupted")
             return False
         finally:
             self.tryingToConnect = False
@@ -180,6 +185,7 @@ class Game:
         self.hosting = False
         self.searching = False
         self.connectedToHost = False
+        self.enterMatch = False
         if self.twirlThread is not None:
             self.twirlThread.join()
             self.twirlThread = None
@@ -188,11 +194,11 @@ class Game:
             self.readThread = None
         self.hostSocket = None
         self.clientManager = None
-        self.modifyUI(self.ui.console, "")
+        self.sync(self.ui.console, "")
 
     def enterLobby(self):
-        self.modifyUI(self.ui.openGroup, Groups.LOBBY)
-        self.modifyUI(self.ui.openGroup, Groups.SETTINGS)
+        self.sync(self.ui.openGroup, Groups.LOBBY)
+        self.sync(self.ui.openGroup, Groups.SETTINGS)
         #self.modifyUI(self.ui.updateSettings, self.settings)
 
         if self.local:
@@ -218,37 +224,42 @@ class Game:
                 if newPointer != self.pointers[Groups.LOBBY]:
                     self.setPointer(Groups.LOBBY, newPointer, self.pointers[Groups.LOBBY])
                     self.pointers[Groups.LOBBY] = newPointer
-            if k in Game.SELECT:
+
+            elif k in Game.SELECT:
                 self.pressButton(Groups.LOBBY)
                 self.updateButtons(Groups.LOBBY)
                 self.setPointer(Groups.LOBBY, self.pointers[Groups.LOBBY], None)
-            if k == -1:
+
+            elif k == -1:
                 if not self.local and not self.hosting:
                     self.pingHost()
                     if not self.connectedToHost:
                         self.directory = Groups.MODE
 
+            if self.enterMatch:
+                self.playMatch()
+
 
         self.cleanLobby()
         self.updateButtons(Groups.LOBBY)
-        self.modifyUI(self.ui.closeGroup, Groups.LOBBY)
-        self.modifyUI(self.ui.closeGroup, Groups.SETTINGS)
+        self.sync(self.ui.closeGroup, Groups.LOBBY)
+        self.sync(self.ui.closeGroup, Groups.SETTINGS)
 
     def enterMode(self):
-        self.modifyUI(self.ui.openGroup, Groups.LOBBY)
-        self.modifyUI(self.ui.openGroup, Groups.SETTINGS)
-        self.modifyUI(self.ui.openGroup, Groups.MODE)
+        self.sync(self.ui.openGroup, Groups.LOBBY)
+        self.sync(self.ui.openGroup, Groups.SETTINGS)
+        self.sync(self.ui.openGroup, Groups.MODE)
 
         if not self.myPlayer:
-            self.modifyUI(self.ui.modeConsole, "Please Enter Your Name")
+            self.sync(self.ui.modeConsole, "Please Enter Your Name")
             name = self.getPlayerName()
             while name == "":
                 name = self.getPlayerName()
             self.myPlayer = Game.createPlayer(name, True, 0)
 
-        self.modifyUI(self.ui.setStageWithPlayer, -1, self.myPlayer)
+        self.sync(self.ui.setStageWithPlayer, -1, self.myPlayer)
 
-        self.modifyUI(self.ui.modeConsole, "Welcome to Uno! Select a Mode")
+        self.sync(self.ui.modeConsole, "Welcome to Uno! Select a Mode")
 
         self.pointers[Groups.MODE] = self.getDefaultPointer(Groups.MODE)
         self.updateButtons(Groups.MODE)
@@ -265,24 +276,24 @@ class Game:
             if k in Game.SELECT:
                 self.pressButton(Groups.MODE)
 
-        self.modifyUI(self.ui.closeGroup, Groups.MODE)
-        self.modifyUI(self.ui.closeGroup, Groups.SETTINGS)
-        self.modifyUI(self.ui.closeGroup, Groups.LOBBY)
+        self.sync(self.ui.closeGroup, Groups.MODE)
+        self.sync(self.ui.closeGroup, Groups.SETTINGS)
+        self.sync(self.ui.closeGroup, Groups.LOBBY)
 
     def enterSettings(self):
-        self.modifyUI(self.ui.pressSettings)
+        self.sync(self.ui.pressSettings)
 
         settings = list(self.settings)
         pointer = 0
-        self.modifyUI(self.ui.setButtonPointer, Groups.SETTINGS, pointer)
+        self.sync(self.ui.setButtonPointer, Groups.SETTINGS, pointer)
         while True:
 
             k = self.ui.getInput()
 
             if k in Game.MOVEMENT:
-                self.modifyUI(self.ui.resetButtonPointer, Groups.SETTINGS, pointer)
+                self.sync(self.ui.resetButtonPointer, Groups.SETTINGS, pointer)
                 pointer = Game.moveSettingsPointer(k, pointer)
-                self.modifyUI(self.ui.setButtonPointer, Groups.SETTINGS, pointer)
+                self.sync(self.ui.setButtonPointer, Groups.SETTINGS, pointer)
 
             elif k == ord(' '):
                 if pointer == 0:
@@ -298,35 +309,38 @@ class Game:
             elif k in (ord('\n'), 27):
                 break
 
-        self.modifyUI(self.ui.resetButtonPointer, Groups.SETTINGS, pointer)
-        self.modifyUI(self.ui.restoreSettings)
+        self.sync(self.ui.resetButtonPointer, Groups.SETTINGS, pointer)
+        self.sync(self.ui.restoreSettings)
         return settings
 
 
     def enterStage(self):
-        self.modifyUI(self.ui.cancelStage)
+        self.directory = Groups.STAGE
+        self.sync(self.ui.cancelStage)
 
-        pointer = 0
-        self.modifyUI(self.ui.setStagePointer, pointer)
+        self.pointers[Groups.STAGE] = self.getDefaultPointer(Groups.STAGE)
+        self.sync(self.ui.setStagePointer, self.pointers[Groups.STAGE])
 
         while True:
 
             k = self.ui.getInput()
 
             if k in Game.MOVEMENT:
-                newPointer = self.moveStagePointer(k, pointer)
-                if newPointer != pointer:
-                    self.ui.restoreStagePointer(pointer)
+                newPointer = self.movePointer(Groups.STAGE, k)
+                if newPointer != self.pointers[Groups.STAGE]:
+                    self.ui.restoreStagePointer(self.pointers[Groups.STAGE])
                     self.ui.setStagePointer(newPointer)
-                    pointer = newPointer
+                    self.pointers[Groups.STAGE] = newPointer
             if k in Game.SELECT:
                 break
             if k == -1:
                 pass
 
-
-        self.modifyUI(self.ui.setStageWithPlayer, 0, self.myPlayer)
-        return pointer
+        finalPointer = self.pointers[Groups.STAGE]
+        #self.pointers[Groups.MODE] = 0
+        self.sync(self.ui.setStageWithPlayer, 0, self.myPlayer)
+        self.directory = Groups.LOBBY
+        return finalPointer
 
     def getDefaultPointer(self, directory):
         if directory == Groups.MODE:
@@ -339,6 +353,8 @@ class Game:
                     return 2
                 else:
                     return 4
+        elif directory == Groups.STAGE:
+            return 0
 
     def getHostIP(self):
         success, address = self.ui.getIPJoinButton()
@@ -357,7 +373,7 @@ class Game:
         self.playerStaging = []
         self.settings = []
         data = eval(FixedMessage.receive(self.hostSocket))
-        self.modifyUI(self.ui.console, "Joined Lobby, Waiting for Host To Start Game")
+        self.sync(self.ui.console, "Joined Lobby, Waiting for Host To Start Game")
         if data['type'] == 'lobby':
             if data['action'] == 'update':
                 playerSummaries = data['data'][0]
@@ -401,31 +417,40 @@ class Game:
         payload = Message.compile(Message.GENERAL, type='lobby', action='message', data=(message,))
         self.clientManager.writeAll(payload, exclude)
 
-    def modifyUI(self, func, *args):
+    def sync(self, func, *args):
         with self.lock:
             func(*args)
 
     def movePointer(self, directory, movement):
-        moveNum = Game.MOVEMENT.index(movement)
-        moveMap = Game.MOVEMENT_MAPS[directory]
-        if directory == Groups.MODE:
-            newPointer = moveMap[self.pointers[directory]][moveNum]
-            while not self.actives[directory][newPointer]:
-                newPointer = moveMap[newPointer][moveNum]
-            return newPointer
-        elif directory == Groups.LOBBY:
-            newPointer = moveMap[self.pointers[directory]][moveNum]
-            if newPointer == 1 and not self.actives[directory][1]:
-                newPointer = 2
-            elif newPointer == 2 and not self.actives[directory][2]:
-                newPointer = 1
-            while not self.actives[directory][newPointer]:
-                newPointer = moveMap[newPointer][moveNum]
+        with self.lock:
+            moveNum = Game.MOVEMENT.index(movement)
+            moveMap = Game.MOVEMENT_MAPS[directory]
+            if directory == Groups.MODE:
+                newPointer = moveMap[self.pointers[directory]][moveNum]
+                while not self.actives[directory][newPointer]:
+                    newPointer = moveMap[newPointer][moveNum]
+                return newPointer
+            elif directory == Groups.LOBBY:
+                newPointer = moveMap[self.pointers[directory]][moveNum]
                 if newPointer == 1 and not self.actives[directory][1]:
                     newPointer = 2
                 elif newPointer == 2 and not self.actives[directory][2]:
                     newPointer = 1
-            return newPointer
+                while not self.actives[directory][newPointer]:
+                    newPointer = moveMap[newPointer][moveNum]
+                    if newPointer == 1 and not self.actives[directory][1]:
+                        newPointer = 2
+                    elif newPointer == 2 and not self.actives[directory][2]:
+                        newPointer = 1
+                return newPointer
+            elif directory == Groups.STAGE:
+                moveNum = Game.MOVEMENT.index(movement)
+                moveMap = Game.MOVEMENT_MAPS[Groups.STAGE]
+                newPointer = moveMap[self.pointers[directory]][moveNum]
+                if newPointer < self.numPlayers:
+                    return newPointer
+                else:
+                    return self.pointers[directory]
 
 
     def moveStagePointer(self, movement, pointer):
@@ -453,6 +478,27 @@ class Game:
         except OSError:
             self.connectedToHost = False
 
+    def playMatch(self):
+        numPlayersBefore = self.numPlayers
+        if self.local:
+            mode = Modes.LOCAL
+        elif self.hosting:
+            mode = Modes.HOST
+        else:
+            mode = Modes.JOIN
+        self.sync(self.ui.closeGroup, Groups.LOBBY)
+        self.sync(self.ui.closeGroup, Groups.SETTINGS)
+
+        m = Match(mode, self.ui, self.settings, self.playerStaging, self.playerSockets, self.hostSocket)
+        self.playerStaging = m.play()
+
+        for i, player in enumerate(self.playerStaging):
+            self.sync(self.ui.setStageWithPlayer, i, player)
+
+        self.enterMatch = False
+        self.sync(self.ui.openGroup, Groups.LOBBY)
+        self.sync(self.ui.openGroup, Groups.SETTINGS)
+
     def pressButton(self, directory):
         if directory == Groups.MODE:
             if self.pointers[directory] == 0:                # Local
@@ -470,13 +516,13 @@ class Game:
                         self.directory = Groups.LOBBY
                         self.local = False
                         self.hosting = False
-                self.modifyUI(self.ui.restoreJoinButton)
+                self.sync(self.ui.restoreJoinButton)
             elif self.pointers[directory] == 3:              # Exit
                 self.gameActive = False
                 self.directory = None
         elif directory == Groups.LOBBY:
             if self.pointers[directory] == 0:                # Begin Match
-                pass
+                self.enterMatch = True
             elif self.pointers[directory] == 1:              # Add AI
                 if self.numPlayers < 4:
                     self.newAI()
@@ -497,8 +543,8 @@ class Game:
                     num = self.enterStage()
                     if num != 0:
                         self.removePlayer(num)
-                        if self.numPlayers == 1:
-                            self.pointers[Groups.LOBBY] = self.movePointer(Groups.LOBBY, curses.KEY_UP)
+                    if self.numPlayers == 1:
+                        self.pointers[Groups.LOBBY] = self.movePointer(Groups.LOBBY, curses.KEY_UP)
             elif self.pointers[directory] == 4:              # Leave
                 self.directory = Groups.MODE
                 if self.connectedToHost:
@@ -521,14 +567,21 @@ class Game:
                 del self.playerSockets[playerNum]
                 self.sendLobby()
             for i, player in enumerate(self.playerStaging):
-                self.modifyUI(self.ui.setStageWithPlayer, i, player)
+                self.sync(self.ui.setStageWithPlayer, i, player)
+            if self.hosting and self.directory == Groups.STAGE:
+                if self.pointers[Groups.STAGE] > 0:
+                    curses.beep()
+                    self.pointers[Groups.STAGE] -= 1
+                    self.sync(self.ui.cancelStage)
+                    self.sync(self.ui.setStagePointer, self.pointers[Groups.STAGE])
+
             self.numPlayers -= 1
             #self.modifyUI(self.ui.console,
             #              "Removed = {} / {}".format(str(len(self.playerSockets)), str(len(self.playerStaging))))
             if self.searching:
-                self.modifyUI(self.ui.searchStage, self.numPlayers)
+                self.sync(self.ui.searchStage, self.numPlayers)
             else:
-                self.modifyUI(self.ui.clearStage, self.numPlayers)
+                self.sync(self.ui.clearStage, self.numPlayers)
 
     def startSearching(self, interfaceOnly=False):
         if not self.searching:
@@ -536,7 +589,7 @@ class Game:
             self.twirlThread = threading.Thread(target=self.t_twirlSearch)
             self.twirlThread.start()
             if not interfaceOnly:
-                self.modifyUI(self.ui.console,  "Your IP is {}. Searching for Players...".format(Game.getIP()))
+                self.sync(self.ui.console, "Your IP is {}. Searching for Players...".format(Game.getIP()))
                 self.clientManager.startListener()
 
     def stopSearching(self, interfaceOnly=False):
@@ -548,9 +601,9 @@ class Game:
 
     def setPointer(self, directory, pointer, old):
         if old is not None:
-            self.modifyUI(self.ui.resetButtonPointer, directory, old)
+            self.sync(self.ui.resetButtonPointer, directory, old)
         if pointer is not None:
-            self.modifyUI(self.ui.setButtonPointer, directory, pointer)
+            self.sync(self.ui.setButtonPointer, directory, pointer)
 
     def clientReader(self):
         while True:
@@ -558,13 +611,13 @@ class Game:
                 message = eval(FixedMessage.receive(self.hostSocket))
                 if message['type'] == 'lobby':
                     if message['action'] == 'update':
-                        self.modifyUI(self.ui.clearAllStages)
+                        self.sync(self.ui.clearAllStages)
                         self.playerStaging = []
                         self.numPlayers = 0
                         playerSummaries = message['data'][0]
                         settings = message['data'][1]
                         self.settings = settings
-                        self.modifyUI(self.ui.updateSettings, self.settings)
+                        self.sync(self.ui.updateSettings, self.settings)
                         for tup in playerSummaries:
                             if tup[2]:
                                 p = Player(tup[0], tup[1])
@@ -577,7 +630,7 @@ class Game:
                         else:
                             self.stopSearching(True)
                     elif message['action'] == 'message':
-                        self.modifyUI(self.ui.console, message['data'][0])
+                        self.sync(self.ui.console, message['data'][0])
 
             except socket.timeout:
                 pass
@@ -612,11 +665,17 @@ class Game:
                     if message == Notification.CLIENT_DISCONNECTED:
                         try:
                             self.removePlayer(self.playerSockets.index(sock))
+                            if self.directory != Groups.STAGE:
+                                self.updateButtons(Groups.LOBBY)
+                                if self.pointers[Groups.LOBBY] == 3:
+                                    self.pointers[Groups.LOBBY] = self.movePointer(Groups.LOBBY, curses.KEY_DOWN)
+                                self.setPointer(Groups.LOBBY, self.pointers[Groups.LOBBY], None)
                         except ValueError:
                             pass
             time.sleep(.1)
 
     def start(self):
+        """Starts the game in the Mode directory."""
         self.gameActive = True
         self.directory = Groups.MODE
         while self.gameActive:
@@ -626,30 +685,33 @@ class Game:
                 self.enterLobby()
 
     def t_twirlConnect(self):
+        """Thread function to create a twirl effect on the join button."""
         while self.tryingToConnect:
             for i in range(4):
-                self.modifyUI(self.ui.twirlConnect, i)
+                self.sync(self.ui.twirlConnect, i)
                 curses.doupdate()
                 time.sleep(.1)
                 if not self.tryingToConnect:
                     break
 
     def t_twirlSearch(self):
+        """Thread function to create a twirl effect for all stages without players."""
         for i in range(self.numPlayers, 4):
-            self.modifyUI(self.ui.searchStage, i)
+            self.sync(self.ui.searchStage, i)
         curses.doupdate()
         while self.searching:
             for i in range(4):
                 for j in range(self.numPlayers, 4):
-                    self.modifyUI(self.ui.twirlSearch, j, i)
+                    self.sync(self.ui.twirlSearch, j, i)
                 curses.doupdate()
                 time.sleep(.1)
                 if not self.searching:
                     break
         for i in range(self.numPlayers, 4):
-            self.modifyUI(self.ui.clearStage, i)
+            self.sync(self.ui.clearStage, i)
 
     def updateButtons(self, directory):
+        """Uses current state data to set the data and active buttons in a directory."""
         data = {}
         if directory == Groups.MODE:
             data = {
@@ -678,7 +740,7 @@ class Game:
             if self.searching:
                 data[Elements.BUTTON_SEARCH]['label'] = "Stop Search"
                 data[Elements.BUTTON_SEARCH]['start'] = 2
-        self.modifyUI(self.ui.updateButtons, data)
+        self.sync(self.ui.updateButtons, data)
         self.actives[directory] = []
         for button in UI.BUTTON_GROUPS[directory]:
             self.actives[directory].append(data[button]['active'])

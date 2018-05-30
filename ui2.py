@@ -1,9 +1,7 @@
 import curses
 import curses.panel
 from enum import Enum
-
 import time
-
 
 class Elements(Enum):
     MAIN = 0
@@ -32,6 +30,31 @@ class Elements(Enum):
     BUTTON_DOES_NOTHING = 23
     WINDOW_HAND = 24
     WINDOW_MATCH = 25
+    TOP_CARD = 26
+    BELOW_CARD = 27
+    DECK_METER = 28
+    DECK_COUNT = 29
+    CARD_0 = 30
+    CARD_1 = 31
+    CARD_2 = 32
+    CARD_3 = 33
+    CARD_4 = 34
+    CARD_5 = 35
+    CARD_6 = 36
+    CARD_7 = 37
+    CARD_8 = 38
+    CARD_9 = 39
+    CARD_10 = 40
+    CARD_11 = 41
+    CARD_12 = 42
+    CARD_13 = 43
+    PLAYER_TILE_0 = 44
+    PLAYER_TILE_1 = 45
+    PLAYER_TILE_2 = 46
+    PLAYER_TILE_3 = 47
+    NEXT_CARD = 48
+    PREV_CARD = 49
+
 
 class Groups(Enum):
     MODE = 0
@@ -39,6 +62,7 @@ class Groups(Enum):
     SETTINGS = 3
     DEFAULT = 4
     STAGE = 5
+    MATCH = 6
 
 class Colors(Enum):
     BLUE = 0
@@ -51,16 +75,6 @@ class Colors(Enum):
     DEEP_RED = 7
 
 class UI:
-
-    # Redefined to Lower Number of Warnings
-    ACS_VLINE = curses.ACS_VLINE
-    ACS_HLINE = curses.ACS_HLINE
-    ACS_RTEE = curses.ACS_RTEE
-    ACS_LTEE = curses.ACS_LTEE
-    ACS_URCORNER = curses.ACS_URCORNER
-    ACS_ULCORNER = curses.ACS_ULCORNER
-    ACS_LLCORNER = curses.ACS_LLCORNER
-    ACS_LRCORNER = curses.ACS_LRCORNER
 
 
     IGNORE_INPUT = (127, 260, 259, 261, 258)
@@ -108,6 +122,64 @@ class UI:
                                  'dimensions': (32, 1)},
         Elements.BUTTON_DOES_NOTHING: {'border': None, 'tether': Elements.WINDOW_SETTINGS, 'color': Colors.WHITE, 'location': (1, 12),
                                  'dimensions': (32, 1)},
+        Elements.WINDOW_MATCH: {'border': 'box', 'tether': None, 'color': Colors.WHITE, 'location': (0, 6), 'dimensions': (70, 18)},
+        Elements.WINDOW_HAND: {'border': 'box', 'tether': None, 'color': Colors.WHITE, 'location': (0, 23),
+                                       'dimensions': (70, 9)},
+        Elements.PREV_CARD: {'border': 'box', 'tether': Elements.WINDOW_HAND, 'color': Colors.WHITE, 'location': (2, 4),
+                             'dimensions': (4, 4)},
+        Elements.CARD_0: {'border': 'box', 'tether': Elements.WINDOW_HAND, 'color': Colors.WHITE, 'location': (7, 4),
+                               'dimensions': (4, 4)},
+        Elements.CARD_1: {'border': 'box', 'tether': Elements.WINDOW_HAND, 'color': Colors.WHITE, 'location': (11, 4),
+                          'dimensions': (4, 4)},
+        Elements.CARD_2: {'border': 'box', 'tether': Elements.WINDOW_HAND, 'color': Colors.WHITE, 'location': (15, 4),
+                          'dimensions': (4, 4)},
+        Elements.CARD_3: {'border': 'box', 'tether': Elements.WINDOW_HAND, 'color': Colors.WHITE, 'location': (19, 4),
+                          'dimensions': (4, 4)},
+        Elements.CARD_4: {'border': 'box', 'tether': Elements.WINDOW_HAND, 'color': Colors.WHITE, 'location': (23, 4),
+                          'dimensions': (4, 4)},
+        Elements.CARD_5: {'border': 'box', 'tether': Elements.WINDOW_HAND, 'color': Colors.WHITE, 'location': (27, 4),
+                          'dimensions': (4, 4)},
+        Elements.CARD_6: {'border': 'box', 'tether': Elements.WINDOW_HAND, 'color': Colors.WHITE, 'location': (31, 4),
+                          'dimensions': (4, 4)},
+        Elements.CARD_7: {'border': 'box', 'tether': Elements.WINDOW_HAND, 'color': Colors.WHITE, 'location': (35, 4),
+                          'dimensions': (4, 4)},
+        Elements.CARD_8: {'border': 'box', 'tether': Elements.WINDOW_HAND, 'color': Colors.WHITE, 'location': (39, 4),
+                          'dimensions': (4, 4)},
+        Elements.CARD_9: {'border': 'box', 'tether': Elements.WINDOW_HAND, 'color': Colors.WHITE, 'location': (43, 4),
+                          'dimensions': (4, 4)},
+        Elements.CARD_10: {'border': 'box', 'tether': Elements.WINDOW_HAND, 'color': Colors.WHITE, 'location': (47, 4),
+                          'dimensions': (4, 4)},
+        Elements.CARD_11: {'border': 'box', 'tether': Elements.WINDOW_HAND, 'color': Colors.WHITE, 'location': (51, 4),
+                          'dimensions': (4, 4)},
+        Elements.CARD_12: {'border': 'box', 'tether': Elements.WINDOW_HAND, 'color': Colors.WHITE, 'location': (55, 4),
+                          'dimensions': (4, 4)},
+        Elements.CARD_13: {'border': 'box', 'tether': Elements.WINDOW_HAND, 'color': Colors.WHITE, 'location': (59, 4),
+                           'dimensions': (4, 4)},
+        Elements.NEXT_CARD: {'border': 'box', 'tether': Elements.WINDOW_HAND, 'color': Colors.WHITE, 'location': (64, 4),
+                           'dimensions': (4, 4)},
+        Elements.DECK_METER : {'border': 'box', 'tether': Elements.WINDOW_MATCH, 'color': Colors.WHITE, 'location': (2, 5),
+                           'dimensions': (5, 11)},
+        Elements.DECK_COUNT: {'border': None, 'tether': Elements.WINDOW_MATCH, 'color': Colors.WHITE,
+                              'location': (1, 2),
+                              'dimensions': (9, 2)},
+        Elements.TOP_CARD: {'border': 'box', 'tether': Elements.WINDOW_MATCH, 'color': Colors.WHITE,
+                              'location': (29, 4),
+                              'dimensions': (14, 12)},
+        Elements.BELOW_CARD: {'border': 'box', 'tether': Elements.WINDOW_MATCH, 'color': Colors.WHITE,
+                            'location': (27, 2),
+                            'dimensions': (14, 12)},
+        Elements.PLAYER_TILE_0: {'border': 'box', 'tether': Elements.WINDOW_MATCH, 'color': Colors.BLUE,
+                              'location': (55, 1),
+                              'dimensions': (14, 4)},
+        Elements.PLAYER_TILE_1: {'border': 'box', 'tether': Elements.WINDOW_MATCH, 'color': Colors.RED,
+                                 'location': (55, 5),
+                                 'dimensions': (14, 4)},
+        Elements.PLAYER_TILE_2: {'border': 'box', 'tether': Elements.WINDOW_MATCH, 'color': Colors.GREEN,
+                                 'location': (55, 9),
+                                 'dimensions': (14, 4)},
+        Elements.PLAYER_TILE_3: {'border': 'box', 'tether': Elements.WINDOW_MATCH, 'color': Colors.YELLOW,
+                                 'location': (55, 13),
+                                 'dimensions': (14, 4)},
     }
 
     GROUPS = {
@@ -116,7 +188,12 @@ class UI:
         Groups.MODE : (Elements.WINDOW_MODE, Elements.MAIN_STAGE, Elements.BUTTON_LOCAL, Elements.BUTTON_HOST, Elements.BUTTON_JOIN, Elements.BUTTON_EXIT),
         Groups.DEFAULT : (Elements.TITLE,),
         Groups.SETTINGS : (Elements.WINDOW_SETTINGS, Elements.BUTTON_DISPLAY_EFFECTS, Elements.BUTTON_COMPUTER_SPEED, Elements.BUTTON_SHOW_HANDS,
-                      Elements.BUTTON_DOES_NOTHING)
+                      Elements.BUTTON_DOES_NOTHING),
+        Groups.MATCH : (Elements.WINDOW_MATCH, Elements.WINDOW_HAND, Elements.CARD_0, Elements.CARD_1, Elements.CARD_2, Elements.CARD_3,
+                        Elements.CARD_4, Elements.CARD_5, Elements.CARD_6, Elements.CARD_7, Elements.CARD_8, Elements.CARD_9, Elements.CARD_10,
+                        Elements.CARD_11, Elements.CARD_12, Elements.CARD_13, Elements.PLAYER_TILE_0, Elements.PLAYER_TILE_1,
+                        Elements.PLAYER_TILE_2, Elements.PLAYER_TILE_3, Elements.TOP_CARD, Elements.BELOW_CARD,
+                        Elements.PREV_CARD, Elements.NEXT_CARD, Elements.DECK_COUNT, Elements.DECK_METER)
     }
 
     BUTTON_GROUPS = {
@@ -128,6 +205,10 @@ class UI:
     COLORS = (Colors.BLUE, Colors.RED, Colors.GREEN, Colors.YELLOW)
     TWIRL = ('|', '/', '-', '\\')
     STAGES = (Elements.PLAYER_STAGE_0, Elements.PLAYER_STAGE_1, Elements.PLAYER_STAGE_2, Elements.PLAYER_STAGE_3)
+    CARDS = (Elements.CARD_0, Elements.CARD_1, Elements.CARD_2, Elements.CARD_3, Elements.CARD_4, Elements.CARD_5,
+             Elements.CARD_6, Elements.CARD_7, Elements.CARD_8, Elements.CARD_9, Elements.CARD_10, Elements.CARD_11,
+             Elements.CARD_12, Elements.CARD_13)
+    TILES = (Elements.PLAYER_TILE_0, Elements.PLAYER_TILE_1, Elements.PLAYER_TILE_2, Elements.PLAYER_TILE_3)
 
     def __init__(self, screen):
 
@@ -154,6 +235,16 @@ class UI:
         curses.init_pair(10, 226, 58)
         curses.init_pair(11, 8, curses.COLOR_BLACK) # gray
         curses.init_pair(12, 9, curses.COLOR_BLACK) # deep red
+
+        # Redefined to Lower Number of Warnings
+        self.ACS_VLINE = curses.ACS_VLINE
+        self.ACS_HLINE = curses.ACS_HLINE
+        self.ACS_RTEE = curses.ACS_RTEE
+        self.ACS_LTEE = curses.ACS_LTEE
+        self.ACS_URCORNER = curses.ACS_URCORNER
+        self.ACS_ULCORNER = curses.ACS_ULCORNER
+        self.ACS_LLCORNER = curses.ACS_LLCORNER
+        self.ACS_LRCORNER = curses.ACS_LRCORNER
 
         self.TEXT_COLORS = {
             Colors.WHITE: curses.color_pair(1),
@@ -216,17 +307,17 @@ class UI:
             window.attrset(self.TEXT_COLORS[color])
         if border == 'box':
             if element == Elements.TITLE:
-                window.border(UI.ACS_VLINE, UI.ACS_VLINE, UI.ACS_HLINE, UI.ACS_HLINE,
-                              UI.ACS_ULCORNER,
-                              UI.ACS_URCORNER, UI.ACS_LTEE, UI.ACS_RTEE)
+                window.border(self.ACS_VLINE, self.ACS_VLINE, self.ACS_HLINE, self.ACS_HLINE,
+                              self.ACS_ULCORNER,
+                              self.ACS_URCORNER, self.ACS_LTEE, self.ACS_RTEE)
             elif element in (Elements.WINDOW_LOBBY, Elements.WINDOW_HAND):
-                window.border(UI.ACS_VLINE, UI.ACS_VLINE, UI.ACS_HLINE, UI.ACS_HLINE,
-                              UI.ACS_LTEE,
-                              UI.ACS_RTEE, UI.ACS_LLCORNER, UI.ACS_LRCORNER)
+                window.border(self.ACS_VLINE, self.ACS_VLINE, self.ACS_HLINE, self.ACS_HLINE,
+                              self.ACS_LTEE,
+                              self.ACS_RTEE, self.ACS_LLCORNER, self.ACS_LRCORNER)
             elif element == Elements.WINDOW_MATCH:
-                window.border(UI.ACS_VLINE, UI.ACS_VLINE, UI.ACS_HLINE, UI.ACS_HLINE,
-                              UI.ACS_LTEE,
-                              UI.ACS_RTEE, UI.ACS_LTEE, UI.ACS_RTEE)
+                window.border(self.ACS_VLINE, self.ACS_VLINE, self.ACS_HLINE, self.ACS_HLINE,
+                              self.ACS_LTEE,
+                              self.ACS_RTEE, self.ACS_LTEE, self.ACS_RTEE)
             else:
                 window.box()
         panel = curses.panel.new_panel(window)
@@ -253,37 +344,43 @@ class UI:
         self._putText(Elements.TITLE, 25, 3, "\\\\ //", Colors.BLUE)
         self._putText(Elements.TITLE, 31, 3, "|| \\||", Colors.GREEN)
         self._putText(Elements.TITLE, 39, 3, "\\\\ //", Colors.RED)
-        self._putChar(Elements.TITLE, 0, 4, UI.ACS_LTEE, Colors.WHITE)
 
+        self._putChar(Elements.TITLE, 0, 4, self.ACS_LTEE, Colors.WHITE)
         for i in range(1, 69):
-            self._putChar(Elements.TITLE, i, 4, UI.ACS_HLINE, Colors.WHITE)
-        self._putChar(Elements.TITLE, 69, 4, UI.ACS_RTEE, Colors.WHITE)
+            self._putChar(Elements.TITLE, i, 4, self.ACS_HLINE, Colors.WHITE)
+        self._putChar(Elements.TITLE, 69, 4, self.ACS_RTEE, Colors.WHITE)
 
-        self._putChar(Elements.WINDOW_LOBBY, 0, 9, UI.ACS_LTEE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_LOBBY, 0, 9, self.ACS_LTEE, Colors.WHITE)
         for i in range(1, 69):
-            self._putChar(Elements.WINDOW_LOBBY, i, 9, UI.ACS_HLINE, Colors.WHITE)
-        self._putChar(Elements.WINDOW_LOBBY, 69, 9, UI.ACS_RTEE, Colors.WHITE)
+            self._putChar(Elements.WINDOW_LOBBY, i, 9, self.ACS_HLINE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_LOBBY, 69, 9, self.ACS_RTEE, Colors.WHITE)
 
-        """
-        self.putChar('handWindow', 0, 2, curses.ACS_LTEE, Colors.WHITE, False)
+        self._putChar(Elements.WINDOW_HAND, 0, 2, self.ACS_LTEE, Colors.WHITE)
         for i in range(1, 69):
-            self.putChar('handWindow', i, 2, curses.ACS_HLINE, Colors.WHITE, False)
-        self.putChar('handWindow', 69, 2, curses.ACS_RTEE, Colors.WHITE, True)
-        """
+            self._putChar(Elements.WINDOW_HAND, i, 2, self.ACS_HLINE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_HAND, 69, 2, self.ACS_RTEE, Colors.WHITE)
 
-        self._putChar(Elements.WINDOW_MODE, 0, 5, UI.ACS_LTEE, Colors.WHITE)
-        self._putChar(Elements.WINDOW_MODE, 0, 7, UI.ACS_LTEE, Colors.WHITE)
+
+        self._putChar(Elements.WINDOW_MODE, 0, 5, self.ACS_LTEE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_MODE, 0, 7, self.ACS_LTEE, Colors.WHITE)
         for i in range(1, 35):
-            self._putChar(Elements.WINDOW_MODE, i, 5, UI.ACS_HLINE, Colors.WHITE)
-            self._putChar(Elements.WINDOW_MODE, i, 7, UI.ACS_HLINE, Colors.WHITE)
-        self._putChar(Elements.WINDOW_MODE, 35, 5, UI.ACS_RTEE, Colors.WHITE)
-        self._putChar(Elements.WINDOW_MODE, 0, 7, UI.ACS_LTEE, Colors.WHITE)
+            self._putChar(Elements.WINDOW_MODE, i, 5, self.ACS_HLINE, Colors.WHITE)
+            self._putChar(Elements.WINDOW_MODE, i, 7, self.ACS_HLINE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_MODE, 35, 5, self.ACS_RTEE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_MODE, 0, 7, self.ACS_LTEE, Colors.WHITE)
 
         self._putText(Elements.WINDOW_SETTINGS, 13, 1, "Settings", Colors.WHITE)
-        self._putChar(Elements.WINDOW_SETTINGS, 0, 2, UI.ACS_LTEE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_SETTINGS, 0, 2, self.ACS_LTEE, Colors.WHITE)
         for i in range(1, 33):
-            self._putChar(Elements.WINDOW_SETTINGS, i, 2, UI.ACS_HLINE, Colors.WHITE)
-        self._putChar(Elements.WINDOW_SETTINGS, 33, 2, UI.ACS_RTEE, Colors.WHITE)
+            self._putChar(Elements.WINDOW_SETTINGS, i, 2, self.ACS_HLINE, Colors.WHITE)
+        self._putChar(Elements.WINDOW_SETTINGS, 33, 2, self.ACS_RTEE, Colors.WHITE)
+
+        self._putText(Elements.NEXT_CARD, 1, 1, "->", Colors.WHITE)
+        self._putText(Elements.NEXT_CARD, 1, 2, "->", Colors.WHITE)
+        self._putText(Elements.PREV_CARD, 1, 1, "<-", Colors.WHITE)
+        self._putText(Elements.PREV_CARD, 1, 2, "<-", Colors.WHITE)
+        self._putText(Elements.DECK_COUNT, 0, 0, "Deck:", Colors.WHITE)
+        self._putText(Elements.DECK_COUNT, 0, 1, "0 Cards", Colors.WHITE)
 
         data = {
             Elements.BUTTON_START: {'start': 11, 'length': 32, 'label': 'Start Game', 'active': False, 'color': None},
