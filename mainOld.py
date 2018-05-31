@@ -1,6 +1,6 @@
 from curses import wrapper
 import sys
-from ui import UI
+from uiOld import UI
 from player import Player, ComputerPlayer
 #from match import Match
 import curses

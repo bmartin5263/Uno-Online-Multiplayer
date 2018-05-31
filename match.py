@@ -1,6 +1,6 @@
 from enum import Enum
 from uno_objs import Deck
-from ui2 import Groups, UI
+from ui import Groups, UI
 import curses
 import threading
 import time

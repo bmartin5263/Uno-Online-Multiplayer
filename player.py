@@ -1,6 +1,6 @@
 from uno_objs import Hand
 
-class Player():
+class Player:
 
     def __init__(self, name, points=0):
         self.name = name

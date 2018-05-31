@@ -4,7 +4,7 @@ import socket
 import threading
 import curses
 from curses import wrapper
-from ui2 import UI, Groups, Elements
+from ui import UI, Groups, Elements
 from player import Player, ComputerPlayer
 from network_util import SocketManager, FixedMessage, Message, Notification
 from match import Match, Modes
