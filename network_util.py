@@ -336,8 +336,10 @@ class FixedMessage:
         return message + ' '*length
 
     @staticmethod
-    def receive(s):
+    def receive(s, timeout=None):
         """Receive one complete TCP Message and output its string content."""
+        if timeout is not None:
+            s.settimeout(timeout)
         output = ''
         try:
             packet = s.recv(FixedMessage.MESSAGE_LENGTH).decode()
@@ -350,6 +352,8 @@ class FixedMessage:
                 if not packet:
                     raise BrokenPipeError
             output += packet.rstrip()
+        except socket.timeout:
+            raise socket.timeout
         finally:
             s.settimeout(None)
         return output

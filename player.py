@@ -31,6 +31,9 @@ class Player():
     def removeCard(self, index):
         return self.hand.removeCard(index)
 
+    def handSize(self):
+        return len(self.hand)
+
     def getAllLegalCards(self, color, value):
         out = {'all': [],
                'wild': [],

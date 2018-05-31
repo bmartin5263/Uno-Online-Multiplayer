@@ -1,5 +1,6 @@
 import curses
 import curses.panel
+import math
 from enum import Enum
 import time
 
@@ -73,11 +74,90 @@ class Colors(Enum):
     GRAY = 5
     INVERT = 6
     DEEP_RED = 7
+    WILD = 8
 
 class UI:
 
+    TRANSLATE_COLOR = {
+        'blue' : Colors.BLUE,
+        'red' : Colors.RED,
+        'green' : Colors.GREEN,
+
+    }
 
     IGNORE_INPUT = (127, 260, 259, 261, 258)
+
+    BIG_NUMBERS = {'0': ["  .d8888b.  ", " d88P  Y88b ", " 888    888 ", " 888    888 ", " 888    888 ", " 888    888 ",
+                         " Y88b  d88P ", '  "Y8888P"  '],
+                   '1': ['   .d888    ', '  d88888    ', '    8888    ', '    8888    ', '    8888    ', '    8888    ',
+                         '    8888    ', '  88888888  '],
+                   '2': ['  .d8888b.  ', ' d88P  Y88b ', '        888 ', '      .d88P ', '  .od888P"  ', ' d88P"      ',
+                         ' 888"       ', ' 8888888888 '],
+                   '3': ['  .d8888b.  ', ' d88P  Y88b ', '      .d88P ', '     8888"  ', '      "Y8b. ', ' 888    888 ',
+                         ' Y88b  d88P ', '  "Y8888P"  '],
+                   '4': ['     d8888  ', '    d8P888  ', '   d8P 888  ', '  d8P  888  ', ' d88   888  ', ' 8888888888 ',
+                         '       888  ', '       888  '],
+                   '5': [' 8888888888 ', ' 888        ', ' 888        ', ' 8888888b.  ', '      "Y88b ', '        888 ',
+                         ' Y88b  d88P ', '  "Y8888P"  '],
+                   '6': ['  .d8888b.  ', ' d88P  Y88b ', ' 888        ', ' 888d888b.  ', ' 888P "Y88b ', ' 888    888 ',
+                         ' Y88b  d88P ', '  "Y8888P"  '],
+                   '7': [' 8888888888 ', '       d88P ', '      d88P  ', '     d88P   ', '  88888888  ', '   d88P     ',
+                         '  d88P      ', ' d88P       '],
+                   '8': ['  .d8888b.  ', ' d88P  Y88b ', ' Y88b. d88P ', '  "Y88888"  ', ' .d8P""Y8b. ', ' 888    888 ',
+                         ' Y88b  d88P ', '  "Y8888P"  '],
+                   '9': ['  .d8888b.  ', ' d88P  Y88b ', ' 888    888 ', ' Y88b. d888 ', '  "Y888P888 ', '        888 ',
+                         ' Y88b  d88P ', '  "Y8888P"  '],
+                   'X': [' Y8b    d8P ', '  Y8b  d8P  ', '   Y8888P   ', '    Y88P    ', '    d88b    ', '   d8888b   ',
+                         '  d8P  Y8b  ', ' d8P    Y8b '],
+
+                   'R9': ['     d88P   ', '    d88P    ', '   d88P     ', '  d88P      ', '  Y88b     ', '   Y88b     ',
+                          '    Y88b    ', '     Y88b   '],
+
+                   'R8': ['    d88P   Y', '   d88P     ', '  d88P      ', ' d88P       ', ' Y88b       ',
+                          '  Y88b      ',
+                          '   Y88b     ', '    Y88b   d'],
+
+                   'R7': ['   d88P   Y8', '  d88P     Y', ' d88P       ', 'd88P        ', 'Y88b        ',
+                          ' Y88b       ',
+                          '  Y88b     d', '   Y88b   d8'],
+
+                   'R6': ['  d88P   Y88', ' d88P     Y8', 'd88P       Y', '88P         ', '88b         ',
+                          'Y88b       d',
+                          ' Y88b     d8', '  Y88b   d88'],
+
+                   'R5': [' d88P   Y88b', 'd88P     Y88', '88P       Y8', '8P         Y', '8b         d',
+                          '88b       d8',
+                          'Y88b     d88', ' Y88b   d88P'],
+
+                   'R4': ['d88P   Y88b ', '88P     Y88b', '8P       Y88', 'P         Y8', 'b         d8',
+                          '8b       d88',
+                          '88b     d88P', 'Y88b   d88P '],
+
+                   'R3': ['88P   Y88b  ', '8P     Y88b ', 'P       Y88b', '         Y88', '         d88',
+                          'b       d88P',
+                          '8b     d88P ', '88b   d88P  '],
+
+                   'R2': ['8P   Y88b   ', 'P     Y88b  ', '       Y88b ', '        Y88b', '        d88P',
+                          '       d88P ',
+                          'b     d88P  ', '8b   d88P   '],
+
+                   'R1': ['P   Y88b    ', '     Y88b   ', '      Y88b  ', '       Y88b ', '       d88P ',
+                          '      d88P  ',
+                          '     d88P   ', 'b   d88P    '],
+
+                   'R0': ['   Y88b     ', '    Y88b    ', '     Y88b   ', '      Y88b  ', '      d88P  ',
+                          '     d88P   ',
+                          '    d88P    ', '   d88P     '],
+
+                   'W': [' 88      88 ', ' 88      88 ', ' 88  db  88 ', ' 88 d88b 88 ', ' 88d8888b88 ', ' 88P    Y88 ',
+                         ' 8P      Y8 ', ' P        Y '],
+                   '+2': ['   db       ', '   88       ', ' C8888D     ', '   88  8888 ', '   VP     8 ',
+                          '       8888 ',
+                          '       8    ', '       8888 '],
+                   '+4': ['   db       ', '   88       ', ' C8888D     ', '   88    d  ', '   VP   d8  ',
+                          '       d 8  ',
+                          '      d8888 ', '         8  ']
+                   }
 
     ELEMENT_DEFAULTS = {
         Elements.TITLE : {'border': 'box', 'tether': None, 'color': Colors.WHITE, 'location': (0, 0), 'dimensions': (70, 7)},
@@ -213,7 +293,9 @@ class UI:
     def __init__(self, screen):
 
         self.directory = None
-        self.currentHand = None
+        self.hand = None
+        self.handName = None
+        self.topCard = None
         self.currentCard = -1
 
         self.e = {
@@ -270,10 +352,8 @@ class UI:
         self._initializeElements()
         self.openGroup(Groups.DEFAULT)
 
-        self.clearStage(0)
-        self.clearStage(1)
-        self.clearStage(2)
-        self.clearStage(3)
+        self.clearAllStages()
+        self.clearAllTiles()
 
         #self.openGroup(Groups.LOBBY)
         #self.openGroup(Groups.SETTINGS)
@@ -283,9 +363,12 @@ class UI:
     def blank(length):
         return ' ' * length
 
-    def getInput(self):
+    def getInput(self, blocking=False):
+        if blocking:
+            self.noTimeOut()
         curses.flushinp()
         k = self.e[Elements.MAIN]['window'].getch()
+        self.timeOut()
         return k
 
     def _createElement(self, element):
@@ -433,6 +516,17 @@ class UI:
             self._putText(Elements.WINDOW_MODE, 1, 6, text, color)
         curses.doupdate()
 
+    def _drawDeckVisual(self, lst):
+        for i in range(9):
+            self._putText(Elements.DECK_METER, 2, 9 - i, ' ', Colors.WHITE)
+        for i, string in enumerate(lst):
+            if i < 3:
+                self._putText(Elements.DECK_METER, 2, 9 - i, '=', Colors.RED)
+            elif i < 6:
+                self._putText(Elements.DECK_METER, 2, 9 - i, '=', Colors.YELLOW)
+            elif i < 9:
+                self._putText(Elements.DECK_METER, 2, 9 - i, '=', Colors.GREEN)
+
     def _getLineText(self, element, x, y, length):
         """Get a Line of Text From an Element"""
         curses.curs_set(1)
@@ -507,10 +601,72 @@ class UI:
     def _twirlSearch(self, num, phase):
         """Spins search wheel at specified stage using current phase char"""
 
+    def noTimeOut(self):
+        self.e[Elements.MAIN]['window'].timeout(-1)
+
+    def timeOut(self):
+        self.e[Elements.MAIN]['window'].timeout(600)
+
     @staticmethod
     def _updatePanels():
         curses.panel.update_panels()
         curses.doupdate()
+
+    def pushCard(self, card, draw, reverse):
+        self.e[Elements.TOP_CARD]['panel'].hide()
+        self.e[Elements.BELOW_CARD]['panel'].hide()
+
+        if self.topCard is not None:
+            self.e[Elements.BELOW_CARD]['panel'].show()
+            self.drawCard(self.topCard, True, reverse)
+
+        self.topCard = card
+
+        if draw:
+            self.e[Elements.TOP_CARD]['panel'].show()
+            self.drawCard(self.topCard, False, reverse)
+
+        curses.doupdate()
+
+    def _resizeElement(self, element, x, y):
+        window = self.e[element]['window']
+        window.resize(x, y)
+        window.erase()
+        window.box()
+        window.noutrefresh()
+
+    def drawCard(self, card, bottom, reverse):
+        color = card.color
+        value = card.value
+        if bottom:
+            element = Elements.BELOW_CARD
+            window = self.e[Elements.TOP_CARD]['window']
+            window.erase()
+            window.noutrefresh()
+        else:
+            element = Elements.TOP_CARD
+        self._resizeElement(element, 12, 14)
+        self._colorElement(element, color)
+        if value == 'R':
+            if reverse:
+                value = 'R9'
+            else:
+                value = 'R0'
+        for i, num in enumerate(UI.BIG_NUMBERS[value]):
+            self._putText(element, 1, 2 + i, num, color)
+        curses.doupdate()
+
+    def expandTopCard(self, amount, reverse=False):
+        window = self.e[Elements.TOP_CARD]['window']
+        if amount == 11:
+            self.drawCard(self.topCard, False, reverse)
+        else:
+            window.erase()
+            window.resize(2+amount, 4+amount)
+            self._colorElement(Elements.TOP_CARD, self.topCard.color)
+            window.box()
+            window.refresh()
+            time.sleep(.06)
 
     def cancelStage(self):
         """Set text of stage 0 to 'cancel' for use in kicking players"""
@@ -540,6 +696,23 @@ class UI:
         self._putText(stage, 1, 1, "No Player", Colors.GRAY)
         curses.doupdate()
 
+    def clearAllTiles(self):
+        for i in range(4):
+            tile = UI.TILES[i]
+            self._colorElement(tile, Colors.GRAY)
+            self._putText(tile, 1, 1, '            ')
+            self._putText(tile, 1, 2, '            ')
+            self._putText(tile, 1, 1, 'No Player', Colors.GRAY)
+        curses.doupdate()
+
+    def clearTile(self, num):
+        tile = UI.TILES[num]
+        self._colorElement(tile, Colors.GRAY)
+        self._putText(tile, 1, 1, '            ')
+        self._putText(tile, 1, 2, '            ')
+        self._putText(tile, 1, 1, 'No Player', Colors.GRAY)
+        curses.doupdate()
+
     def closeGroup(self, group):
         for element in UI.GROUPS[group]:
             self.e[element]['panel'].hide()
@@ -561,6 +734,16 @@ class UI:
         self.clearStage(-1)
         self._putText(Elements.MAIN_STAGE, 1, 1, UI.blank(32))
         return self._getLineText(Elements.MAIN_STAGE, 1, 1, 12)
+
+    def hideAllCards(self):
+        for card in UI.CARDS:
+            self.e[card]['panel'].hide()
+        UI._updatePanels()
+
+    def hidePile(self):
+        self.e[Elements.TOP_CARD]['panel'].hide()
+        self.e[Elements.BELOW_CARD]['panel'].hide()
+        UI._updatePanels()
 
     def joinButtonConnecting(self):
         data = {
@@ -605,9 +788,14 @@ class UI:
 
     def setDeckLength(self, num):
         """Sets length of deck to num"""
-
-    def setHand(self, hand):
-        """Sets the current hand in UI memory to the hand provided and draws it."""
+        self._putText(Elements.DECK_COUNT, 0, 1, '         ', Colors.WHITE)
+        self._putText(Elements.DECK_COUNT, 0, 1, "{} Cards".format(num), Colors.WHITE)
+        deckCeiling = int(math.ceil(num / 12))
+        deckVisual = []
+        for i in range(deckCeiling):
+            deckVisual.append('=')
+        self._drawDeckVisual(deckVisual)
+        curses.doupdate()
 
     def showHand(self, offset):
         """Show the hand at the offset provided"""
@@ -632,6 +820,82 @@ class UI:
         self._colorElement(UI.STAGES[num], None)
         curses.doupdate()
 
+    def setHand(self, hand, name, hidden, offset):
+        """Sets the current hand in UI memory to the hand provided and draws it."""
+        self.hand = hand
+        self.handName = name
+        self.drawHand(hidden, offset)
+
+    def drawHand(self, hidden, offset):
+        for i in range(14):
+            card = UI.CARDS[i]
+            window = self.e[card]['window']
+            panel = self.e[card]['panel']
+            panel.hide()
+            index = i+(14*offset)
+            if index < len(self.hand) and len(self.hand) > 0:
+                panel.show()
+                if not hidden:
+                    color = self.hand[index].color
+                    value = self.hand[index].value
+                else:
+                    color = Colors.WHITE
+                    value = '?'
+                if color == Colors.WILD:
+                    color = Colors.WHITE
+                self._colorElement(card, color)
+                if value not in ('+4', 'W'):
+                    self._putText(card, 1, 1, '  ', color)
+                    self._putText(card, 1, 2, '  ', color)
+                    if value == '+2':
+                        self._putText(card, 1, 1, value, color)
+                        self._putText(card, 1, 2, value, color)
+                    else:
+                        self._putText(card, 2, 1, value, color)
+                        self._putText(card, 1, 2, value, color)
+                    window.box()
+                else:
+                    self.rainbowCardBox(window, value)
+                #curses.panel.update_panels()
+                #window.noutrefresh()
+
+        UI._updatePanels()
+        handName = self.handName + "'s Hand"
+
+        self._putText(Elements.WINDOW_HAND,1,1,UI.blank(68))
+        self._putText(Elements.WINDOW_HAND, 1, 1, handName)
+        self._putText(Elements.WINDOW_HAND, 55, 1, "[{}]".format("-"*int(math.ceil(len(self.hand)/14))))
+
+        if len(self.hand) > 0:
+            self._putText(Elements.WINDOW_HAND, 56+offset, 1, "|")
+        curses.doupdate()
+
+    def rainbowCardBox(self, cardWindow, value):
+        #TODO Fix
+        cardWindow.addch(0,0,self.ACS_ULCORNER, curses.color_pair(3))
+        for i in range(2):
+            cardWindow.addch(0, 1+i, self.ACS_HLINE, curses.color_pair(3))
+        cardWindow.addch(0, 3, self.ACS_URCORNER, curses.color_pair(3))
+        cardWindow.addch(1, 0, self.ACS_VLINE, curses.color_pair(5))
+        cardWindow.addch(1, 3, self.ACS_VLINE, curses.color_pair(5))
+        cardWindow.addch(2, 0, self.ACS_VLINE, curses.color_pair(4))
+        cardWindow.addch(2, 3, self.ACS_VLINE, curses.color_pair(4))
+        cardWindow.addch(3, 0, self.ACS_LLCORNER, curses.color_pair(2))
+        for i in range(2):
+            cardWindow.addch(3, 1 + i, self.ACS_HLINE, curses.color_pair(2))
+        try:
+            cardWindow.addch(3, 3, self.ACS_LRCORNER, curses.color_pair(2))
+        except:
+            pass
+        cardWindow.addstr(1, 1, '  ', curses.color_pair(5))
+        cardWindow.addstr(2, 1, '  ', curses.color_pair(4))
+        if value == 'W':
+            cardWindow.addstr(1, 2, value, curses.color_pair(5))
+            cardWindow.addstr(2, 1, value, curses.color_pair(4))
+        else:
+            cardWindow.addstr(1, 1, value, curses.color_pair(5))
+            cardWindow.addstr(2, 1, value, curses.color_pair(4))
+
     def setStageWithPlayer(self, num, player):
         """Add Player Details to Lobby Stage. Use -1 for main stage"""
         if num < 0:
@@ -643,6 +907,14 @@ class UI:
         self._putText(stage, 1, 1, player.name)
         self._putText(stage, 1, 2, UI.blank(32))
         self._putText(stage, 1, 2, 'Points: {}'.format(str(player.points)))
+        curses.doupdate()
+
+    def setTileWithPlayer(self, num, player):
+        tile = UI.TILES[num]
+        self._colorElement(tile, None)
+        self._putText(tile, 1, 1, '            ')
+        self._putText(tile, 1, 1, player.name)
+        self.updateCardCount(num, player.handSize())
         curses.doupdate()
 
     def twirlConnect(self, i):
@@ -676,6 +948,20 @@ class UI:
             self._putText(buttonName, 1, 1, ' ' * int(length), color)
             self._putText(buttonName, start + 1, 1, label, color)
         curses.doupdate()
+
+    def updateCardCount(self, num, amount):
+        tile = UI.TILES[num]
+        cardString = str(amount) + ' Cards'
+        self._putText(tile, 5, 2, '        ')
+        if len(cardString) == 7:
+            self._putText(tile, 6, 2, cardString)
+        else:
+            self._putText(tile, 5, 2, cardString)
+        #if color:
+        #    self.windows[tileName]['window'].bkgd(ord(' ') | self.BACK_COLORS[self.COLORS[num]])
+        #    self.windows[tileName]['window'].attrset(self.TEXT_COLORS[self.COLORS[num]])
+        #    self.windows[tileName]['window'].box()
+        #    self.windows[tileName]['window'].refresh()
 
     def updateSettingButtons(self, data):
         for buttonName in data:

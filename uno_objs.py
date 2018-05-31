@@ -1,9 +1,10 @@
 import random
 from enum import Enum
+from ui2 import Colors
 
 class Card:
 
-    COLORS = ('blue', 'red', 'green', 'yellow')
+    COLORS = (Colors.BLUE, Colors.RED, Colors.GREEN, Colors.YELLOW)
     VALUES = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'R', 'X', '+2')
     WILD = ('W', '+4')
 
@@ -20,7 +21,7 @@ class Card:
 
         if value in Card.WILD:
             self.wild = True
-            self.color = 'white'
+            self.color = Colors.WHITE
         else:
             self.wild = False
 
@@ -83,8 +84,8 @@ class Deck:
                 if value != '0':
                     self.deck.append(Card(color, value))
         for i in range(4):
-            self.deck.append(Card('wild', '+4'))
-            self.deck.append(Card('wild', 'W'))
+            self.deck.append(Card(Colors.WILD, '+4'))
+            self.deck.append(Card(Colors.WILD, 'W'))
         self.shuffle()
 
     def drawCard(self):
@@ -92,6 +93,9 @@ class Deck:
 
     def addCard(self, card):
         self.deck.append(card)
+
+    def insertCard(self, card):
+        self.deck.insert(0, card)
 
     def shuffle(self):
         random.shuffle(self.deck)

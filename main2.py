@@ -78,8 +78,7 @@ class Game:
         self.directory = Groups.MODE
 
         # Match Data
-        self.local = False              # is this a local game
-        self.hosting = False            # are you hosting?
+        self.mode = None
         self.settings = [True, 'Normal', False, False]
         self.playerStaging = []
         self.numPlayers = 0
@@ -122,19 +121,18 @@ class Game:
         name = Game.COMPUTER_NAMES[self.numPlayers]
         p = Game.createPlayer(name, False, 0)
         self.addPlayer(p)
-        if self.hosting:
+        if self.mode == Modes.HOST:
             self.sendLobby()
 
     def addPlayer(self, player, sock=None):
         with self.lock:
             self.numPlayers += 1
             self.playerStaging.append(player)
-            if not self.local:
-                if self.hosting:
+            if self.mode == Modes.HOST:
                     self.playerSockets.append(sock)
             self.sync(self.ui.setStageWithPlayer, self.numPlayers - 1, player)
             #self.modifyUI(self.ui.console, "Added = {} / {}".format(str(len(self.playerSockets)), str(len(self.playerStaging))))
-            if self.hosting:
+            if self.mode == Modes.HOST:
                 if self.searching:
                     self.sync(self.ui.console, "Your IP is {}. Welcome {}!".format(Game.getIP(), player.name))
                 else:
@@ -181,8 +179,7 @@ class Game:
     def cleanLobby(self):
         for i in range(self.numPlayers):
             self.removePlayer(0)
-        self.local = False
-        self.hosting = False
+        self.mode = None
         self.searching = False
         self.connectedToHost = False
         self.enterMatch = False
@@ -201,13 +198,12 @@ class Game:
         self.sync(self.ui.openGroup, Groups.SETTINGS)
         #self.modifyUI(self.ui.updateSettings, self.settings)
 
-        if self.local:
+        if self.mode == Modes.LOCAL:
             self.beginLocal()
-        else:
-            if self.hosting:
-                self.beginHost()
-            else:
-                self.getLobbyFromHost()
+        elif self.mode == Modes.HOST:
+            self.beginHost()
+        elif self.mode == Modes.JOIN:
+            self.getLobbyFromHost()
 
         self.pointers[Groups.LOBBY] = self.getDefaultPointer(Groups.LOBBY)
         self.updateButtons(Groups.LOBBY)
@@ -231,7 +227,7 @@ class Game:
                 self.setPointer(Groups.LOBBY, self.pointers[Groups.LOBBY], None)
 
             elif k == -1:
-                if not self.local and not self.hosting:
+                if self.mode == Modes.JOIN:
                     self.pingHost()
                     if not self.connectedToHost:
                         self.directory = Groups.MODE
@@ -346,10 +342,10 @@ class Game:
         if directory == Groups.MODE:
             return 0
         elif directory == Groups.LOBBY:
-            if self.local:
+            if self.mode == Modes.LOCAL:
                 return 1
             else:
-                if self.hosting:
+                if self.mode == Modes.HOST:
                     return 2
                 else:
                     return 4
@@ -478,22 +474,33 @@ class Game:
         except OSError:
             self.connectedToHost = False
 
+    def pauseThreads(self):
+        if self.mode != Modes.LOCAL:
+            self.readThread.join()
+            self.readThread = None
+
+    def resumeThreads(self):
+        if self.mode == Modes.JOIN:
+            self.readThread = threading.Thread(target=self.clientReader)
+            self.readThread.start()
+        elif self.mode == Modes.HOST:
+            self.readThread = threading.Thread(target=self.hostReader)
+            self.readThread.start()
+
+
     def playMatch(self):
-        numPlayersBefore = self.numPlayers
-        if self.local:
-            mode = Modes.LOCAL
-        elif self.hosting:
-            mode = Modes.HOST
-        else:
-            mode = Modes.JOIN
         self.sync(self.ui.closeGroup, Groups.LOBBY)
         self.sync(self.ui.closeGroup, Groups.SETTINGS)
 
-        m = Match(mode, self.ui, self.settings, self.playerStaging, self.playerSockets, self.hostSocket)
+        self.pauseThreads()
+
+        m = Match(self.mode, self.ui, self.settings, self.playerStaging, self.playerSockets, self.hostSocket)
         self.playerStaging = m.play()
 
         for i, player in enumerate(self.playerStaging):
             self.sync(self.ui.setStageWithPlayer, i, player)
+
+        self.resumeThreads()
 
         self.enterMatch = False
         self.sync(self.ui.openGroup, Groups.LOBBY)
@@ -503,19 +510,17 @@ class Game:
         if directory == Groups.MODE:
             if self.pointers[directory] == 0:                # Local
                 self.directory = Groups.LOBBY
-                self.local = True
+                self.mode = Modes.LOCAL
             elif self.pointers[directory] == 1:              # Host
                 self.directory = Groups.LOBBY
-                self.local = False
-                self.hosting = True
+                self.mode = Modes.HOST
             elif self.pointers[directory] == 2:              # Join
                 address = self.getHostIP()
                 if address != "":
                     success = self.connectToHost(address)
                     if success:
                         self.directory = Groups.LOBBY
-                        self.local = False
-                        self.hosting = False
+                        self.mode = Modes.JOIN
                 self.sync(self.ui.restoreJoinButton)
             elif self.pointers[directory] == 3:              # Exit
                 self.gameActive = False
@@ -527,9 +532,9 @@ class Game:
                 if self.numPlayers < 4:
                     self.newAI()
                     if self.numPlayers == 4:
-                        self.pointers[Groups.LOBBY] = self.movePointer(Groups.LOBBY, curses.KEY_DOWN)
+                        self.pointers[Groups.LOBBY] = self.movePointer(Groups.LOBBY, curses.KEY_UP)
             elif self.pointers[directory] == 2:              # Search
-                if self.hosting:
+                if self.mode == Modes.HOST:
                     if not self.searching:
                         self.startSearching()
                         payload = Message.compile(Message.GENERAL, type='lobby', action='search', data=True)
@@ -550,25 +555,25 @@ class Game:
                 if self.connectedToHost:
                     self.hostSocket.shutdown(socket.SHUT_RDWR)
                     self.hostSocket.close()
-                elif self.hosting:
+                elif self.mode == Modes.HOST:
                     self.clientManager.terminateManager()
             elif self.pointers[directory] == 5:              # Settings
                 settings = self.enterSettings()
                 if settings != self.settings:
                     self.settings = settings
-                    if self.hosting:
+                    if self.mode == Modes.HOST:
                         self.sendLobby()
 
     def removePlayer(self, playerNum):
         with self.lock:
             del self.playerStaging[playerNum]
-            if self.hosting:
+            if self.mode == Modes.HOST:
                 self.clientManager.removeSocket(self.playerSockets[playerNum])
                 del self.playerSockets[playerNum]
                 self.sendLobby()
             for i, player in enumerate(self.playerStaging):
                 self.sync(self.ui.setStageWithPlayer, i, player)
-            if self.hosting and self.directory == Groups.STAGE:
+            if self.mode == Modes.HOST and self.directory == Groups.STAGE:
                 if self.pointers[Groups.STAGE] > 0:
                     curses.beep()
                     self.pointers[Groups.STAGE] -= 1
@@ -608,7 +613,7 @@ class Game:
     def clientReader(self):
         while True:
             try:
-                message = eval(FixedMessage.receive(self.hostSocket))
+                message = eval(FixedMessage.receive(self.hostSocket, 1.0))
                 if message['type'] == 'lobby':
                     if message['action'] == 'update':
                         self.sync(self.ui.clearAllStages)
@@ -633,7 +638,8 @@ class Game:
                         self.sync(self.ui.console, message['data'][0])
 
             except socket.timeout:
-                pass
+                if self.enterMatch:
+                    break
             except BrokenPipeError:
                 self.connectedToHost = False
                 #self.modifyUI(self.ui.warning, "BROKEN PIPE")
@@ -643,7 +649,7 @@ class Game:
                 return
 
     def hostReader(self):
-        while self.hosting:
+        while self.mode == Modes.HOST and not self.enterMatch:
             inbox = self.clientManager.read()
             for isMessage, sock, message in inbox:
                 if isMessage:
@@ -721,11 +727,11 @@ class Game:
                 Elements.BUTTON_EXIT : { 'start': 14, 'length': 32, 'label': 'Exit', 'active' : True, 'color':None},
             }
         elif directory == Groups.LOBBY:
-            canStart = self.directory == Groups.LOBBY and (self.local or (self.hosting and not self.searching)) and self.numPlayers > 1
-            canSearch = self.directory == Groups.LOBBY and (self.hosting and self.numPlayers < 4)
-            canAddAI = self.directory == Groups.LOBBY and not self.searching and ((self.local and self.numPlayers < 4) or (self.hosting and self.numPlayers < 4))
-            canKick = self.directory == Groups.LOBBY and not self.searching and ((self.local and self.numPlayers > 1) or (self.hosting and self.numPlayers > 1))
-            canSettings = self.directory == Groups.LOBBY and not self.searching and (self.local or self.hosting)
+            canStart = self.directory == Groups.LOBBY and (self.mode == Modes.LOCAL or (self.mode == Modes.HOST and not self.searching)) and self.numPlayers > 1
+            canSearch = self.directory == Groups.LOBBY and (self.mode == Modes.HOST and self.numPlayers < 4)
+            canAddAI = self.directory == Groups.LOBBY and not self.searching and ((self.mode == Modes.LOCAL and self.numPlayers < 4) or (self.mode == Modes.HOST and self.numPlayers < 4))
+            canKick = self.directory == Groups.LOBBY and not self.searching and ((self.mode == Modes.LOCAL and self.numPlayers > 1) or (self.mode == Modes.HOST and self.numPlayers > 1))
+            canSettings = self.directory == Groups.LOBBY and not self.searching and (self.mode == Modes.LOCAL or self.mode == Modes.HOST)
             canLeave = self.directory == Groups.LOBBY and not self.searching
             data = {
                 Elements.BUTTON_START: {'start': 11, 'length': 32, 'label': 'Start Game', 'active' : canStart, 'color':None},
@@ -735,7 +741,7 @@ class Game:
                 Elements.BUTTON_CLOSE: {'start': 11, 'length': 32, 'label': 'Close Room', 'active' : canLeave, 'color':None},
                 Elements.BUTTON_SETTINGS: {'start': 12, 'length': 32, 'label': 'Settings', 'active' : canSettings, 'color':None},
             }
-            if not self.local and not self.hosting:
+            if self.mode == Modes.JOIN:
                 data[Elements.BUTTON_CLOSE]['label'] = "Leave Room"
             if self.searching:
                 data[Elements.BUTTON_SEARCH]['label'] = "Stop Search"
