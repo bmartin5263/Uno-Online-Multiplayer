@@ -536,7 +536,7 @@ class UI:
         window.refresh()
         text = []
         self.e[Elements.MAIN]['window'].timeout(-1)
-        c = self.getInput()
+        c = self.getInput(True)
         while chr(c) != '\n':
             if c not in UI.IGNORE_INPUT and len(text) < length:
                 text.append(chr(c))
@@ -546,7 +546,7 @@ class UI:
                 self._putChar(element, x + i, y, character)
             window.move(y, x+len(text))
             window.refresh()
-            c = self.getInput()
+            c = self.getInput(True)
             self._putText(element, x, y, UI.blank(length))
         curses.curs_set(0)
         text = ''.join(text)
