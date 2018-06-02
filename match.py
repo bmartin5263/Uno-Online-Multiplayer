@@ -14,6 +14,7 @@ class Modes(Enum):
 class Match:
     INITIAL_CARD_COUNT = 7
     EXPAND_FRAMES = 12
+    CARDS_IN_HAND = 14
 
     def __init__(self, mode, ui, settings, players, clientSockets=None, clientManager=None, hostSocket=None):
         self.mode = mode
@@ -37,6 +38,7 @@ class Match:
         self.winner = -1
         self.forceDraw = 0
         self.cardPointer = -1
+        self.offset = 0
         #self.currentHand = None
         #self.turnComplete = False
         self.reverse = False
@@ -96,11 +98,21 @@ class Match:
             card = self.drawCardFromDeck()
             self.placeCardInPile(card)
 
+    def setCardPointer(self, cardNum):
+        if self.cardPointer != -1:
+            self.sync(self.ui.lowerCard, self.cardPointer)
+        self.cardPointer = cardNum
+        self.offset = self.cardPointer // Match.CARDS_IN_HAND
+        if self.cardPointer != -1:
+            self.sync(self.ui.raiseCard, self.cardPointer)
+
+
     def nextTurnLocal(self):
         turnComplete = False
         player = self.players[self.turn]
-        isHuman = player.type
+        isHuman = player.isHuman
         self.cardPointer = 0
+        self.offset = 0
 
         if isHuman:
             self.ui.importHand(self.players[self.turn].hand.getUIData(), player.name, False, False)

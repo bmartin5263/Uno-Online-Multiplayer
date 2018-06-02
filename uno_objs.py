@@ -1,6 +1,6 @@
 import random
 from enum import Enum
-from ui2 import Colors
+from ui import Colors
 
 class Card:
 

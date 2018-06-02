@@ -1,5 +1,6 @@
 import curses
 import curses.panel
+import _curses
 import math
 from enum import Enum
 import time
@@ -572,7 +573,7 @@ class UI:
             color = self.TEXT_COLORS[UI.ELEMENT_DEFAULTS[elementName]['color']]
         try:
             window.addch(y, x, character, color)
-        except:
+        except _curses.error:
             pass
         window.noutrefresh()
 
@@ -586,7 +587,7 @@ class UI:
             color = self.TEXT_COLORS[UI.ELEMENT_DEFAULTS[elementName]['color']]
         try:
             window.addstr(y, x, text, color)
-        except:
+        except _curses.error:
             pass
         window.noutrefresh()
 
