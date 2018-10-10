@@ -451,7 +451,6 @@ class UI:
             self._putChar(Elements.WINDOW_MODE, i, 5, self.ACS_HLINE, Colors.WHITE)
             self._putChar(Elements.WINDOW_MODE, i, 7, self.ACS_HLINE, Colors.WHITE)
         self._putChar(Elements.WINDOW_MODE, 35, 5, self.ACS_RTEE, Colors.WHITE)
-        self._putChar(Elements.WINDOW_MODE, 0, 7, self.ACS_LTEE, Colors.WHITE)
 
         self._putText(Elements.WINDOW_SETTINGS, 13, 1, "Settings", Colors.WHITE)
         self._putChar(Elements.WINDOW_SETTINGS, 0, 2, self.ACS_LTEE, Colors.WHITE)
